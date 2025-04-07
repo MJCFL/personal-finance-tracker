@@ -2,40 +2,78 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-const menuItems = [
-  { name: 'Overview', path: '/', icon: '📊' },
-  { name: 'Accounts', path: '/accounts', icon: '🏦' },
-  { name: 'Budget', path: '/budget', icon: '💰' },
-  { name: 'Goals', path: '/goals', icon: '🎯' },
-  { name: 'Reports', path: '/reports', icon: '📈' },
-];
+import { useTheme } from '@/hooks/useTheme';
+import { IconDashboard, IconTransaction, IconBudget, IconInsights, IconSettings } from '@/components/icons';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
+
+  const navigation = [
+    { name: 'Dashboard', href: '/', icon: <IconDashboard className="w-5 h-5" /> },
+    { name: 'Transactions', href: '/transactions', icon: <IconTransaction className="w-5 h-5" /> },
+    { name: 'Budgets', href: '/budgets', icon: <IconBudget className="w-5 h-5" /> },
+    { name: 'Insights', href: '/insights', icon: <IconInsights className="w-5 h-5" /> },
+    { name: 'Settings', href: '/settings', icon: <IconSettings className="w-5 h-5" /> },
+  ];
+
+  const stats = [
+    { label: 'Balance', value: '$12,560.00', type: 'neutral' },
+    { label: 'Income', value: '+$2,300.00', type: 'income' },
+    { label: 'Expenses', value: '-$1,150.00', type: 'expense' }
+  ];
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-200 p-4">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Finance Tracker</h1>
-      </div>
-      <nav>
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.path}>
+    <aside className="w-72 bg-[var(--card)] border-r border-[var(--border)]">
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="p-8 border-b border-[var(--border)]">
+          <h1 className="text-2xl font-bold mb-8">Finance Tracker</h1>
+          
+          {/* Quick Stats */}
+          <div className="space-y-4">
+            {stats.map((stat) => (
+              <div key={stat.label} className="p-4 rounded-xl bg-[var(--hover)]">
+                <p className="text-sm font-medium text-[var(--text-secondary)] mb-1">{stat.label}</p>
+                <p className={`text-xl font-bold amount-${stat.type}`}>
+                  {stat.value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-6">
+          <div className="px-4 mb-4 text-sm font-medium text-[var(--text-secondary)]">
+            MENU
+          </div>
+          <div className="space-y-2 px-3">
+            {navigation.map((item) => (
               <Link
-                href={item.path}
-                className={`flex items-center px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 ${
-                  pathname === item.path ? 'bg-blue-50 text-blue-600' : ''
+                key={item.name}
+                href={item.href}
+                className={`flex items-center gap-4 nav-link ${
+                  pathname === item.href ? 'active' : ''
                 }`}
               >
-                <span className="mr-3">{item.icon}</span>
-                <span>{item.name}</span>
+                {item.icon}
+                <span className="font-medium">{item.name}</span>
               </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
+            ))}
+          </div>
+        </nav>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-[var(--border)]">
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="btn-secondary w-full flex items-center justify-center gap-3 py-3 text-base font-medium"
+          >
+            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          </button>
+        </div>
+      </div>
+    </aside>
   );
 }

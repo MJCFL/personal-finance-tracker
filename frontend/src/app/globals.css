@@ -1,26 +1,234 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
+  /* Base colors */
   --background: #ffffff;
-  --foreground: #171717;
+  --card: #ffffff;
+  --text: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --hover: #f3f4f6;
+
+  /* Financial colors */
+  --income: #059669;
+  --income-light: #d1fae5;
+  --expense: #dc2626;
+  --expense-light: #fee2e2;
+  --savings: #2563eb;
+  --savings-light: #dbeafe;
+  --investment: #7c3aed;
+  --investment-light: #ede9fe;
+  --warning: #eab308;
+  --warning-light: #fef3c7;
+
+  /* Status colors */
+  --success: #059669;
+  --success-light: #d1fae5;
+  --error: #dc2626;
+  --error-light: #fee2e2;
+  --info: #3b82f6;
+  --info-light: #dbeafe;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+.dark {
+  /* Base colors */
+  --background: #111827;
+  --card: #1f2937;
+  --text: #f3f4f6;
+  --text-secondary: #e5e7eb;
+  --border: #374151;
+  --primary: #3b82f6;
+  --hover: #374151;
+
+  /* Financial colors */
+  --income: #34d399;
+  --income-light: rgba(52, 211, 153, 0.2);
+  --expense: #f87171;
+  --expense-light: rgba(248, 113, 113, 0.2);
+  --savings: #60a5fa;
+  --savings-light: rgba(96, 165, 250, 0.2);
+  --investment: #a78bfa;
+  --investment-light: rgba(167, 139, 250, 0.2);
+  --warning: #fbbf24;
+  --warning-light: rgba(251, 191, 36, 0.2);
+
+  /* Status colors */
+  --success: #34d399;
+  --success-light: rgba(52, 211, 153, 0.2);
+  --error: #f87171;
+  --error-light: rgba(248, 113, 113, 0.2);
+  --info: #60a5fa;
+  --info-light: rgba(96, 165, 250, 0.2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Base styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
+  color: var(--text);
+}
+
+/* Financial amount styles */
+.amount-positive {
+  color: var(--income);
+  font-weight: 600;
+}
+
+.amount-negative {
+  color: var(--expense);
+  font-weight: 600;
+}
+
+.amount-neutral {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Transaction types */
+.transaction-income {
+  background-color: var(--income-light);
+  color: var(--income);
+  border: 1px solid var(--income);
+}
+
+.transaction-expense {
+  background-color: var(--expense-light);
+  color: var(--expense);
+  border: 1px solid var(--expense);
+}
+
+.transaction-savings {
+  background-color: var(--savings-light);
+  color: var(--savings);
+  border: 1px solid var(--savings);
+}
+
+.transaction-investment {
+  background-color: var(--investment-light);
+  color: var(--investment);
+  border: 1px solid var(--investment);
+}
+
+/* Status badges */
+.badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.badge-success {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.badge-error {
+  background-color: var(--error-light);
+  color: var(--error);
+}
+
+.badge-warning {
+  background-color: var(--warning-light);
+  color: var(--warning);
+}
+
+.badge-info {
+  background-color: var(--info-light);
+  color: var(--info);
+}
+
+/* Cards and containers */
+.card {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+}
+
+/* Navigation */
+.nav-link {
+  color: var(--text-secondary);
+  padding: 0.75rem 1rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  background-color: var(--hover);
+}
+
+.nav-link.active {
+  color: var(--primary);
+  background-color: var(--hover);
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-align: left;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card);
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:hover {
+  background-color: var(--hover);
+}
+
+/* Forms */
+input, select, textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background-color: var(--card);
+  color: var(--text);
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* Buttons */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-secondary {
+  background-color: var(--hover);
+  color: var(--text);
+}
+
+/* Transitions */
+* {
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
 }
