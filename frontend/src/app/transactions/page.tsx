@@ -1,9 +1,63 @@
 'use client';
 
 import { useState } from 'react';
-import { mockTransactions, mockAccounts } from '@/data/mockData';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
+import TransactionList from '@/components/transactions/TransactionList';
+import TransactionSummary from '@/components/transactions/TransactionSummary';
+import CategoryBreakdown from '@/components/transactions/CategoryBreakdown';
+import { Transaction } from '@/types/transaction';
+
+const categoryColors = {
+  Food: '#22c55e',
+  Shopping: '#3b82f6',
+  Transportation: '#f59e0b',
+  Entertainment: '#8b5cf6',
+  Bills: '#ef4444',
+  Income: '#10b981',
+  Other: '#6b7280',
+};
+
+const categoryIcons = {
+  Food: '🍽️',
+  Shopping: '🛍️',
+  Transportation: '🚗',
+  Entertainment: '🎮',
+  Bills: '📄',
+  Income: '💰',
+  Other: '📦',
+};
+
+// Mock data
+const mockTransactions: Transaction[] = [
+  {
+    id: '1',
+    date: '2025-04-08',
+    description: 'Monthly Salary',
+    amount: 5000,
+    category: 'Income',
+    type: 'income',
+    source: 'Employer Inc.',
+    notes: 'Regular monthly salary',
+    account: 'Main Checking'
+  },
+  {
+    id: '2',
+    date: '2025-04-07',
+    description: 'Grocery Shopping',
+    amount: 150.75,
+    category: 'Food',
+    type: 'expense',
+    source: 'Whole Foods',
+    notes: 'Weekly groceries',
+    account: 'Main Checking'
+  },
+];
+
+const mockAccounts = [
+  { id: '1', name: 'Main Checking', institution: 'Big Bank', balance: 5000 },
+  { id: '2', name: 'Savings', institution: 'Small Bank', balance: 10000 },
+];
 
 export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -20,7 +74,7 @@ export default function Transactions() {
   const filteredTransactions = mockTransactions.filter(transaction => {
     const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
-    const matchesBank = selectedBank === 'all' || transaction.account.includes(selectedBank);
+    const matchesBank = selectedBank === 'all' || transaction.account?.includes(selectedBank);
     
     // Date filtering
     const transactionDate = new Date(transaction.date);
@@ -32,50 +86,74 @@ export default function Transactions() {
 
   // Calculate statistics
   const stats = {
-    totalTransactions: filteredTransactions.length,
     totalIncome: filteredTransactions
       .filter(t => t.amount > 0)
       .reduce((sum, t) => sum + t.amount, 0),
     totalExpenses: Math.abs(filteredTransactions
       .filter(t => t.amount < 0)
       .reduce((sum, t) => sum + t.amount, 0)),
-    netAmount: filteredTransactions
+    netIncome: filteredTransactions
       .reduce((sum, t) => sum + t.amount, 0),
-    averageTransaction: filteredTransactions.length > 0
-      ? Math.abs(filteredTransactions.reduce((sum, t) => sum + t.amount, 0)) / filteredTransactions.length
-      : 0,
-    largestExpense: Math.abs(Math.min(...filteredTransactions.map(t => t.amount))),
-    largestIncome: Math.max(...filteredTransactions.map(t => t.amount)),
-    // Category breakdown
-    categoryTotals: filteredTransactions
+    monthlyChange: 250.75, // Mock monthly change
+  };
+
+  // Calculate category breakdown
+  const categoryBreakdown = Object.entries(
+    filteredTransactions
       .filter(t => t.amount < 0) // Only include expenses
       .reduce((acc, t) => {
-        if (t.category !== 'Income') { // Exclude income category
+        if (t.category !== 'Income') {
           acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
         }
         return acc;
       }, {} as Record<string, number>)
-  };
+  ).map(([name, amount]) => ({
+    name,
+    amount,
+    percentage: (amount / stats.totalExpenses) * 100,
+    icon: categoryIcons[name as keyof typeof categoryIcons] || '📦',
+    color: categoryColors[name as keyof typeof categoryColors] || '#6b7280',
+    change: Math.random() * 20 - 10, // Mock change percentage
+  }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
           Add Transaction
         </button>
       </div>
 
+      {/* Transaction Summary */}
+      <TransactionSummary
+        totalIncome={stats.totalIncome}
+        totalExpenses={stats.totalExpenses}
+        netIncome={stats.netIncome}
+        monthlyChange={stats.monthlyChange}
+      />
+
       {/* Filters */}
-      <div className="bg-white p-6 rounded-lg shadow space-y-4">
-        <h2 className="text-lg font-semibold mb-4">Filters</h2>
+      <div className="bg-white p-4 rounded-xl shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+          <button className="text-sm text-blue-600 hover:text-blue-700" onClick={() => {
+            setSearchTerm('');
+            setSelectedCategory('all');
+            setSelectedBank('all');
+            setStartDate(null);
+            setEndDate(null);
+          }}>
+            Clear Filters
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
             <input
               type="text"
               placeholder="Search transactions..."
-              className="w-full px-4 py-2 border rounded-md"
+              className="w-full px-3 py-2 border rounded-lg text-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -83,14 +161,13 @@ export default function Transactions() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
-              className="w-full px-4 py-2 border rounded-md"
+              className="w-full px-3 py-2 border rounded-lg text-sm"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
             >
               {categories.map(category => (
                 <option key={category} value={category}>
-                  {category === 'all' ? 'All Categories' : 
-                    category.charAt(0).toUpperCase() + category.slice(1)}
+                  {category === 'all' ? 'All Categories' : category}
                 </option>
               ))}
             </select>
@@ -98,7 +175,7 @@ export default function Transactions() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Bank</label>
             <select
-              className="w-full px-4 py-2 border rounded-md"
+              className="w-full px-3 py-2 border rounded-lg text-sm"
               value={selectedBank}
               onChange={(e) => setSelectedBank(e.target.value)}
             >
@@ -114,136 +191,33 @@ export default function Transactions() {
             <div className="flex space-x-2">
               <DatePicker
                 selected={startDate}
-                onChange={(date) => setStartDate(date)}
-                selectsStart
-                startDate={startDate}
-                endDate={endDate}
-                placeholderText="Start Date"
-                className="w-full px-4 py-2 border rounded-md"
+                onChange={setStartDate}
+                placeholderText="Start date"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
               />
               <DatePicker
                 selected={endDate}
-                onChange={(date) => setEndDate(date)}
-                selectsEnd
-                startDate={startDate}
-                endDate={endDate}
-                minDate={startDate}
-                placeholderText="End Date"
-                className="w-full px-4 py-2 border rounded-md"
+                onChange={setEndDate}
+                placeholderText="End date"
+                className="w-full px-3 py-2 border rounded-lg text-sm"
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Basic Stats */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Transaction Summary</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-500">Total Transactions</p>
-              <p className="text-xl font-bold">{stats.totalTransactions}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Average Transaction</p>
-              <p className="text-xl font-bold">${stats.averageTransaction.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Income</p>
-              <p className="text-xl font-bold text-green-600">
-                ${stats.totalIncome.toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Expenses</p>
-              <p className="text-xl font-bold text-red-600">
-                ${stats.totalExpenses.toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Largest Income</p>
-              <p className="text-xl font-bold text-green-600">
-                ${stats.largestIncome.toFixed(2)}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Largest Expense</p>
-              <p className="text-xl font-bold text-red-600">
-                ${stats.largestExpense.toFixed(2)}
-              </p>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Transactions List */}
+        <div className="lg:col-span-2">
+          <TransactionList transactions={filteredTransactions} />
         </div>
 
         {/* Category Breakdown */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Category Breakdown</h3>
-          <div className="space-y-4">
-            {Object.entries(stats.categoryTotals)
-              .sort(([, a], [, b]) => b - a)
-              .map(([category, amount]) => (
-                <div key={category} className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">{category}</p>
-                    <p className="text-sm text-gray-500">
-                      {((amount / stats.totalExpenses) * 100).toFixed(1)}% of total
-                    </p>
-                  </div>
-                  <p className="text-lg font-semibold">${amount.toFixed(2)}</p>
-                </div>
-              ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Transactions Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Account
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.date}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {transaction.description}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.category}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.account}
-                  </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right
-                    ${transaction.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ${Math.abs(transaction.amount).toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="lg:col-span-1">
+          <CategoryBreakdown
+            categories={categoryBreakdown}
+            totalSpent={stats.totalExpenses}
+          />
         </div>
       </div>
     </div>
