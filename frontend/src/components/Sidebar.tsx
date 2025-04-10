@@ -1,20 +1,22 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
-import { IconDashboard, IconTransaction, IconBudget, IconInsights, IconSettings } from '@/components/icons';
+import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: <IconDashboard className="w-5 h-5" /> },
-    { name: 'Transactions', href: '/transactions', icon: <IconTransaction className="w-5 h-5" /> },
-    { name: 'Budgets', href: '/budgets', icon: <IconBudget className="w-5 h-5" /> },
-    { name: 'Insights', href: '/insights', icon: <IconInsights className="w-5 h-5" /> },
-    { name: 'Settings', href: '/settings', icon: <IconSettings className="w-5 h-5" /> },
+    { name: 'Dashboard', href: '/', icon: HomeIcon },
+    { name: 'Transactions', href: '/transactions', icon: BanknotesIcon },
+    { name: 'Assets', href: '/assets', icon: ChartBarIcon },
+    { name: 'Budgets', href: '/budgets', icon: WalletIcon },
+    { name: 'Insights', href: '/insights', icon: WalletIcon },
+    { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
   ];
 
   const stats = [
@@ -57,7 +59,7 @@ export default function Sidebar() {
                   pathname === item.href ? 'active' : ''
                 }`}
               >
-                {item.icon}
+                <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.name}</span>
               </Link>
             ))}
