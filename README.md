@@ -1,6 +1,146 @@
-# Personal Finance Tracker with Predictive Insights
+# Personal Finance Tracker
 
-A comprehensive personal finance management application that helps users track their finances, manage budgets, and get predictive insights using the Teller API.
+A comprehensive full-stack financial management application built with modern web technologies. This application helps users track their assets, monitor investments, and manage their personal finances with real-time market data integration.
+
+## 📸 Application Screenshots
+
+### Dashboard & Financial Overview
+![Dashboard](docs/images/dashboard.png)
+*Main dashboard providing a comprehensive view of your financial status*
+
+### Asset Management
+![Asset Management](docs/images/asset-management.png)
+*Track and manage various assets including stocks with real-time market data*
+
+### Budget Planning
+![Budgets](docs/images/budgets.png)
+*Set and monitor budgets across different categories*
+
+### Financial Insights
+![Insights](docs/images/Insights.png)
+*Data-driven insights to help make informed financial decisions*
+
+## 🏗 System Architecture
+
+```mermaid
+graph TD
+    A[Client Browser] -->|HTTP/WSS| B[Next.js Frontend]
+    B -->|API Calls| C[Node.js Backend]
+    C -->|Stock Data| D[Yahoo Finance API]
+    C -->|User Data| E[MongoDB]
+    B -->|Authentication| F[Auth Service]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#dfd,stroke:#333,stroke-width:2px
+```
+
+## Technical Overview
+
+### Architecture
+- **Frontend**: Next.js 15.2 with TypeScript
+- **Backend**: Node.js with Express
+- **Styling**: Tailwind CSS for responsive design
+- **State Management**: React Hooks and Context API
+- **API Integration**: Real-time stock data via Yahoo Finance API
+
+### Key Features Implemented
+
+#### 1. Asset Management System
+- **Multi-Asset Support**: Track various asset types including:
+  - Stocks (with real-time price updates)
+  - Real Estate
+  - Watches/Jewelry
+  - Vehicles
+  - Other valuable assets
+- **Real-Time Stock Integration**:
+  - Automatic price fetching from Yahoo Finance
+  - Live calculation of portfolio values
+  - Smart debouncing for API calls
+  - Server-side API route implementation for security
+
+#### 2. User Interface
+- **Responsive Design**: Full mobile and desktop support
+- **Dark Theme**: Modern dark mode implementation
+- **Interactive Components**:
+  - Dynamic asset forms with contextual fields
+  - Real-time validation and feedback
+  - Automatic value calculations
+- **Dashboard Layout**: Intuitive navigation with sidebar
+
+#### 3. Technical Implementation Highlights
+- **Server-Side Rendering**: Next.js SSR with hydration optimization
+- **Type Safety**: Full TypeScript implementation
+- **API Architecture**: RESTful API design with proper error handling
+- **Security Features**:
+  - Environment variable management
+  - API key protection
+  - Secure data handling
+
+### Development Practices
+- **Version Control**: Git with structured commit messages
+- **Code Organization**: Component-based architecture
+- **Security**: Proper environment variable handling and API security
+- **Documentation**: Comprehensive inline documentation and README
+
+## Future Enhancements (In Progress)
+1. User Authentication System
+2. Transaction Management
+3. Budget Tracking
+4. Data Visualization
+5. Bank Account Integration
+
+## Technical Skills Demonstrated
+- Modern React Development (Hooks, Context, SSR)
+- TypeScript & Type Safety
+- API Integration & Real-time Data Handling
+- Responsive Web Design
+- Security Best Practices
+- Full-Stack Development
+- Version Control & Project Organization
+
+## Getting Started
+
+### Prerequisites
+- Node.js (v18+)
+- npm or yarn
+- Git
+
+### Installation
+```bash
+# Clone the repository
+git clone [repository-url]
+
+# Install dependencies
+cd personal-finance-tracker
+npm install
+
+# Set up environment variables
+cp .env.example .env.local
+
+# Start the development server
+npm run dev
+```
+
+### Environment Setup
+Configure the following environment variables in `.env.local`:
+- API endpoints
+- External service configurations
+- Development mode settings
+
+## Project Structure
+```
+personal-finance-tracker/
+├── frontend/                # Next.js frontend
+│   ├── src/
+│   │   ├── app/           # Pages & API routes
+│   │   ├── components/    # React components
+│   │   ├── services/      # External services
+│   │   └── types/        # TypeScript definitions
+├── backend/                # Node.js backend
+│   └── src/
+└── docs/                  # Documentation
+```
 
 ## 🌟 Features
 
