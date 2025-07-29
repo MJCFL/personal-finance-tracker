@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google';
 import './globals.css';
-import Sidebar from '@/components/Sidebar';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import SessionProvider from '@/components/auth/SessionProvider';
 import Script from 'next/script';
+import ResponsiveLayout from '@/components/layout/ResponsiveLayout';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -24,16 +25,13 @@ export default function RootLayout({
           src="https://cdn.teller.io/connect/connect.js"
           strategy="lazyOnload"
         />
-        <ThemeProvider>
-          <div className="min-h-screen flex">
-            <Sidebar />
-            <main className="flex-1 p-8 bg-[var(--background)]">
-              <div className="max-w-6xl mx-auto">
-                {children}
-              </div>
-            </main>
-          </div>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            <ResponsiveLayout>
+              {children}
+            </ResponsiveLayout>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

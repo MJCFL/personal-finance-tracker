@@ -124,30 +124,38 @@ export default function AssetForm({ onSubmit }: AssetFormProps) {
       </div>
 
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-200">
-          {category === 'stocks' ? 'Stock Symbol' : 'Asset Name'}
+        <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+          {category === 'stocks' ? 'Stock Symbol or Company Name' : 'Asset Name'}
         </label>
-        <div className="mt-1">
+        <div className="mt-1 relative">
           <input
             type="text"
+            name="name"
             id="name"
             value={name}
             onChange={(e) => handleStockSymbolChange(e.target.value)}
-            className="block w-full rounded-md border-gray-700 bg-gray-800 text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder={category === 'stocks' ? 'e.g., AAPL' : 'e.g., Downtown Apartment'}
+            className="bg-gray-800 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-600 rounded-md text-gray-100"
+            placeholder={category === 'stocks' ? 'AAPL or Apple' : 'e.g., Downtown Apartment'}
           />
-          {isLoadingStock && (
-            <p className="mt-1 text-sm text-gray-400">Loading stock data...</p>
-          )}
-          {stockError && (
-            <p className="mt-1 text-sm text-red-500">{stockError}</p>
-          )}
-          {stockPrice && (
-            <p className="mt-1 text-sm text-green-500">
-              Current Price: ${stockPrice.toFixed(2)}
+          {category === 'stocks' && (
+            <p className="mt-1 text-xs text-gray-400">
+              Search by ticker (e.g., AAPL) or company name (e.g., Apple)
             </p>
           )}
+          {isLoadingStock && (
+            <div className="absolute right-3 top-2">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+            </div>
+          )}
         </div>
+        {stockError && (
+          <p className="mt-2 text-sm text-red-500">{stockError}</p>
+        )}
+        {stockPrice !== null && (
+          <p className="mt-2 text-sm text-green-500">
+            Current price: {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(stockPrice)}
+          </p>
+        )}
       </div>
 
       {category === 'stocks' && (

@@ -4,11 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
-import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon } from '@heroicons/react/24/outline';
+import HelpButton from './onboarding/HelpButton';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { data: session, status } = useSession();
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
@@ -67,13 +70,60 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="p-6 border-t border-[var(--border)]">
+        <div className="p-6 border-t border-[var(--border)] space-y-4">
+          {/* User Authentication */}
+          <div className="mb-4">
+            {status === 'loading' ? (
+              <div className="text-center py-2">
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+              </div>
+            ) : session ? (
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  {session.user?.image ? (
+                    <img 
+                      src={session.user.image} 
+                      alt={session.user.name || 'User'} 
+                      className="h-10 w-10 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+                      <span className="text-lg font-bold text-white">
+                        {session.user?.name?.charAt(0) || 'U'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm font-medium mb-1">{session.user?.name || 'Authenticated User'}</p>
+                <p className="text-xs text-[var(--text-secondary)] mb-3">{session.user?.email}</p>
+                <button
+                  onClick={() => signOut({ callbackUrl: '/' })}
+                  className="text-sm text-red-500 hover:text-red-400"
+                >
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => signIn('google')}
+                className="btn-primary w-full flex items-center justify-center gap-2 py-2 text-sm font-medium"
+              >
+                <UserIcon className="h-4 w-4" />
+                Sign in
+              </button>
+            )}
+          </div>
+          
+          {/* Theme Toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="btn-secondary w-full flex items-center justify-center gap-3 py-3 text-base font-medium"
+            className="btn-secondary w-full flex items-center justify-center gap-3 py-3 text-base font-medium mb-3"
           >
             {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
+          
+          {/* Help Button */}
+          <HelpButton />
         </div>
       </div>
     </aside>

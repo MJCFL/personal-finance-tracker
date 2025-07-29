@@ -46,7 +46,13 @@ graph TD
 
 ### Key Features Implemented
 
-#### 1. Asset Management System
+#### 1. User Authentication
+- **Google OAuth Integration**: Secure authentication using Google accounts
+- **Protected Routes**: Authenticated access to dashboard and asset management
+- **User-Specific Data**: Assets are associated with and visible only to their owners
+- **Session Management**: Persistent sessions with NextAuth.js
+
+#### 2. Asset Management System
 - **Multi-Asset Support**: Track various asset types including:
   - Stocks (with real-time price updates)
   - Real Estate
