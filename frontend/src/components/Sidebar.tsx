@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon, PresentationChartLineIcon } from '@heroicons/react/24/outline';
 import HelpButton from './onboarding/HelpButton';
 
 export default function Sidebar() {
@@ -17,6 +17,7 @@ export default function Sidebar() {
     { name: 'Dashboard', href: '/', icon: HomeIcon },
     { name: 'Transactions', href: '/transactions', icon: BanknotesIcon },
     { name: 'Assets', href: '/assets', icon: ChartBarIcon },
+    { name: 'Analytics', href: '/analytics', icon: PresentationChartLineIcon },
     { name: 'Budgets', href: '/budgets', icon: WalletIcon },
     { name: 'Insights', href: '/insights', icon: WalletIcon },
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },

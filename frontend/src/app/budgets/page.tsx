@@ -1,123 +1,95 @@
 'use client';
 
 import React, { useState } from 'react';
-import BudgetSummary from '@/components/budgets/BudgetSummary';
-import BudgetCategories from '@/components/budgets/BudgetCategories';
-import SavingsGoals from '@/components/budgets/SavingsGoals';
-import CreateBudgetModal from '@/components/budgets/CreateBudgetModal';
+import BudgetList from '@/components/budgets/BudgetList';
+import BudgetForm from '@/components/budgets/BudgetForm';
+import ExpenseForm from '@/components/budgets/ExpenseForm';
+import BudgetReports from '@/components/budgets/BudgetReports';
+import { Budget } from '@/types/budget';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import Modal from '@/components/ui/Modal';
 
-interface Budget {
-  id: string;
-  category: string;
-  spent: number;
-  budget: number;
-  color: string;
-  icon: string;
-  rollover: number;
-}
-
-interface SavingsGoal {
-  id: string;
-  name: string;
-  targetAmount: number;
-  currentAmount: number;
-  targetDate: string;
-  icon: string;
-}
-
-const mockBudgets: Budget[] = [
-  {
-    id: '1',
-    category: 'Housing',
-    spent: 1800,
-    budget: 2000,
-    color: '#3B82F6',
-    icon: '🏠',
-    rollover: 200
-  },
-  {
-    id: '2',
-    category: 'Food & Dining',
-    spent: 850,
-    budget: 800,
-    color: '#10B981',
-    icon: '🍽️',
-    rollover: 0
-  },
-  {
-    id: '3',
-    category: 'Transportation',
-    spent: 300,
-    budget: 400,
-    color: '#8B5CF6',
-    icon: '🚗',
-    rollover: 50
-  },
-  {
-    id: '4',
-    category: 'Entertainment',
-    spent: 250,
-    budget: 300,
-    color: '#F59E0B',
-    icon: '🎬',
-    rollover: 0
-  }
-];
-
-const mockSavingsGoals: SavingsGoal[] = [
-  {
-    id: '1',
-    name: 'New Car',
-    targetAmount: 25000,
-    currentAmount: 15000,
-    targetDate: '2025-12-31',
-    icon: '🚗'
-  },
-  {
-    id: '2',
-    name: 'Emergency Fund',
-    targetAmount: 10000,
-    currentAmount: 8500,
-    targetDate: '2025-06-30',
-    icon: '🏦'
-  }
-];
+// Using Budget type from @/types/budget
 
 export default function BudgetsPage() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
-  const totalBudget = mockBudgets.reduce((sum, budget) => sum + budget.budget, 0);
-  const totalSpent = mockBudgets.reduce((sum, budget) => sum + budget.spent, 0);
-  const totalSavings = mockSavingsGoals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
+  const [activeTab, setActiveTab] = useState<'budgets' | 'expenses' | 'reports'>('budgets');
+
+  const handleCreateBudget = () => {
+    setSelectedBudget(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEditBudget = (budget: Budget) => {
+    setSelectedBudget(budget);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plan Your Spending</h1>
-          <p className="text-gray-500">Set and track your budget goals</p>
+    <ProtectedRoute>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Budget Management</h1>
+        
+        {/* Tab Navigation */}
+        <div className="flex border-b border-gray-200 mb-6">
+          <button
+            className={`px-4 py-2 font-medium text-sm ${activeTab === 'budgets' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('budgets')}
+          >
+            My Budgets
+          </button>
+          <button
+            className={`px-4 py-2 font-medium text-sm ${activeTab === 'expenses' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('expenses')}
+          >
+            Record Expenses
+          </button>
+          <button
+            className={`px-4 py-2 font-medium text-sm ${activeTab === 'reports' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+            onClick={() => setActiveTab('reports')}
+          >
+            Reports & Analytics
+          </button>
         </div>
-        <button
-          onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+
+        {/* Tab Content */}
+        {activeTab === 'budgets' && (
+          <div className="mb-8">
+            <BudgetList
+              onCreateBudget={handleCreateBudget}
+              onEditBudget={handleEditBudget}
+            />
+          </div>
+        )}
+
+        {activeTab === 'expenses' && (
+          <div className="mb-8 max-w-2xl mx-auto">
+            <ExpenseForm />
+          </div>
+        )}
+
+        {activeTab === 'reports' && (
+          <div className="mb-8">
+            <BudgetReports />
+          </div>
+        )}
+
+        <Modal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          title={selectedBudget ? 'Edit Budget' : 'Create Budget'}
         >
-          <span className="mr-2">+</span>
-          Create Budget
-        </button>
+          <BudgetForm
+            budget={selectedBudget || undefined}
+            onSuccess={handleCloseModal}
+          />
+        </Modal>
       </div>
-
-      <BudgetSummary totalBudget={totalBudget} totalSpent={totalSpent} totalSavings={totalSavings} />
-      <BudgetCategories budgets={mockBudgets} />
-      <SavingsGoals goals={mockSavingsGoals} />
-
-      <CreateBudgetModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={(data) => {
-          console.log('New budget:', data);
-          setIsCreateModalOpen(false);
-        }}
-      />
-    </div>
+    </ProtectedRoute>
   );
 }
