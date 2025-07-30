@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Asset, AssetType, AssetCategory } from '@/types/asset';
+import { Asset, AssetType, AssetCategory, ASSET_CATEGORIES } from '@/types/asset';
 import { getAssets } from '@/services/assetService';
 
 interface Insight {
@@ -46,49 +46,45 @@ export default function FinancialInsights() {
       return sum + (asset.currentValue || asset.value || 0);
     }, 0);
     
-    // Calculate asset type allocation
-    const typeAllocation: Record<AssetType, number> = {
-      [AssetType.STOCK]: 0,
-      [AssetType.REAL_ESTATE]: 0,
-      [AssetType.CASH]: 0,
-      [AssetType.CRYPTO]: 0,
-      [AssetType.OTHER]: 0,
-    };
+    // Calculate asset category allocation
+    const categoryAllocation: Record<string, number> = {};
     
-    // Map asset category to AssetType
-    const mapCategoryToType = (category: AssetCategory): AssetType => {
-      if (category === 'stocks') return AssetType.STOCK;
-      if (category === 'real_estate') return AssetType.REAL_ESTATE;
-      if (category === 'watches' || category === 'art' || category === 'jewelry' || category === 'vehicles') return AssetType.OTHER;
-      return AssetType.OTHER;
-    };
+    // Initialize all categories with zero
+    ASSET_CATEGORIES.forEach((cat) => {
+      categoryAllocation[cat.value] = 0;
+    });
     
+    // Sum up values by category
     assets.forEach((asset) => {
-      const assetType = asset.type || mapCategoryToType(asset.category);
-      typeAllocation[assetType] += asset.currentValue || asset.value || 0;
+      const category = asset.category;
+      categoryAllocation[category] = (categoryAllocation[category] || 0) + 
+        (asset.currentValue || asset.value || 0);
     });
     
     // Calculate percentages
-    const typePercentages: Record<AssetType, number> = {} as Record<AssetType, number>;
-    Object.keys(typeAllocation).forEach((type) => {
-      const assetType = type as AssetType;
-      typePercentages[assetType] = totalValue > 0 
-        ? (typeAllocation[assetType] / totalValue) * 100 
+    const categoryPercentages: Record<string, number> = {};
+    Object.keys(categoryAllocation).forEach((category) => {
+      categoryPercentages[category] = totalValue > 0 
+        ? (categoryAllocation[category] / totalValue) * 100 
         : 0;
     });
     
     // Insight 1: Portfolio Diversification
     if (assets.length > 0) {
-      const highestType = Object.keys(typePercentages).reduce((a, b) => 
-        typePercentages[a as AssetType] > typePercentages[b as AssetType] ? a : b
-      ) as AssetType;
+      const highestCategory = Object.keys(categoryPercentages).reduce((a, b) => 
+        categoryPercentages[a] > categoryPercentages[b] ? a : b
+      );
       
-      const highestPercentage = typePercentages[highestType];
+      const highestPercentage = categoryPercentages[highestCategory];
+      
+      // Get the display name for the category
+      const categoryInfo = ASSET_CATEGORIES.find(cat => cat.value === highestCategory);
+      const categoryDisplayName = categoryInfo ? categoryInfo.label : highestCategory;
       
       if (highestPercentage > 70) {
         insights.push({
           title: 'Low Diversification',
-          description: `${highestPercentage.toFixed(1)}% of your portfolio is in ${highestType.toLowerCase().replace('_', ' ')}. Consider diversifying to reduce risk.`,
+          description: `${highestPercentage.toFixed(1)}% of your portfolio is in ${categoryDisplayName}. Consider diversifying to reduce risk.`,
           type: 'warning',
           icon: '⚠️',
         });
@@ -103,7 +99,10 @@ export default function FinancialInsights() {
     }
     
     // Insight 2: Cash Reserve
-    const cashPercentage = typePercentages[AssetType.CASH];
+    // Look for a 'cash' category, or default to 0 if not found
+    const cashCategory = ASSET_CATEGORIES.find(cat => cat.value === 'cash' as AssetCategory);
+    const cashPercentage = cashCategory ? (categoryPercentages[cashCategory.value] || 0) : 0;
+    
     if (cashPercentage < 10 && totalValue > 1000) {
       insights.push({
         title: 'Low Cash Reserve',
@@ -121,10 +120,7 @@ export default function FinancialInsights() {
     }
     
     // Insight 3: Portfolio Growth
-    const stockAssets = assets.filter(asset => {
-      const assetType = asset.type || (asset.category === 'stocks' ? AssetType.STOCK : null);
-      return assetType === AssetType.STOCK;
-    });
+    const stockAssets = assets.filter(asset => asset.category === 'stocks');
     if (stockAssets.length > 0) {
       const growingStocks = stockAssets.filter(asset => {
         // For this example, we'll consider a stock as growing if its current value is higher than its purchase price
@@ -151,6 +147,32 @@ export default function FinancialInsights() {
           description: `Only ${growthPercentage.toFixed(0)}% of your stocks are growing in value. Consider reviewing your investment strategy.`,
           type: 'warning',
           icon: '📉',
+        });
+      }
+    }
+    
+    // Insight 4: Asset Concentration
+    if (assets.length >= 3) {
+      // Find the asset with the highest value
+      const highestValueAsset = assets.reduce((max, asset) => {
+        const assetValue = asset.currentValue || asset.value || 0;
+        const maxValue = max.currentValue || max.value || 0;
+        return assetValue > maxValue ? asset : max;
+      }, assets[0]);
+      
+      const highestValue = highestValueAsset.currentValue || highestValueAsset.value || 0;
+      const assetConcentration = (highestValue / totalValue) * 100;
+      
+      // Get the category display name
+      const categoryInfo = ASSET_CATEGORIES.find(cat => cat.value === highestValueAsset.category as AssetCategory);
+      const categoryDisplayName = categoryInfo ? categoryInfo.label : highestValueAsset.category;
+      
+      if (assetConcentration > 50) {
+        insights.push({
+          title: 'High Asset Concentration',
+          description: `${assetConcentration.toFixed(1)}% of your portfolio is in a single ${categoryDisplayName.toLowerCase()} asset (${highestValueAsset.name}). Consider diversifying further.`,
+          type: 'warning',
+          icon: '📈',
         });
       }
     }

@@ -3,19 +3,31 @@
 import React, { useEffect, useState } from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Pie } from 'react-chartjs-2';
-import { Asset, AssetType, AssetCategory } from '@/types/asset';
+import { Asset, AssetType, AssetCategory, ASSET_CATEGORIES } from '@/types/asset';
 import { getAssets } from '@/services/assetService';
 
 // Register required Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// Define colors for different asset types
+// Define colors for different asset types and categories
 const assetTypeColors: Record<AssetType, string> = {
   [AssetType.STOCK]: 'rgba(54, 162, 235, 0.8)',
   [AssetType.REAL_ESTATE]: 'rgba(255, 99, 132, 0.8)',
   [AssetType.CASH]: 'rgba(75, 192, 192, 0.8)',
   [AssetType.CRYPTO]: 'rgba(153, 102, 255, 0.8)',
   [AssetType.OTHER]: 'rgba(255, 159, 64, 0.8)',
+};
+
+const assetCategoryColors: Record<string, string> = {
+  'stocks': 'rgba(54, 162, 235, 0.8)',
+  'real_estate': 'rgba(255, 99, 132, 0.8)',
+  'cash': 'rgba(75, 192, 192, 0.8)',
+  'crypto': 'rgba(153, 102, 255, 0.8)',
+  'watches': 'rgba(255, 206, 86, 0.8)',
+  'vehicles': 'rgba(75, 192, 100, 0.8)',
+  'art': 'rgba(255, 159, 64, 0.8)',
+  'jewelry': 'rgba(200, 100, 200, 0.8)',
+  'other': 'rgba(150, 150, 150, 0.8)',
 };
 
 export default function AssetAllocationChart() {
@@ -48,36 +60,41 @@ export default function AssetAllocationChart() {
     return AssetType.OTHER;
   };
 
-  // Calculate total value by asset type
+  // Calculate total value by asset category
   const calculateAssetAllocation = () => {
-    const allocation: Record<AssetType, number> = {
-      [AssetType.STOCK]: 0,
-      [AssetType.REAL_ESTATE]: 0,
-      [AssetType.CASH]: 0,
-      [AssetType.CRYPTO]: 0,
-      [AssetType.OTHER]: 0,
-    };
-
-    assets.forEach((asset) => {
-      const assetType = asset.type || mapCategoryToType(asset.category);
-      allocation[assetType] += asset.currentValue || asset.value || 0;
+    const allocation: Record<string, number> = {};
+    
+    // Initialize with all possible categories
+    ASSET_CATEGORIES.forEach((cat: { value: AssetCategory; label: string }) => {
+      allocation[cat.value] = 0;
     });
 
-    return allocation;
+    assets.forEach((asset) => {
+      // Use the actual category of the asset
+      const category = asset.category;
+      allocation[category] = (allocation[category] || 0) + (asset.currentValue || asset.value || 0);
+    });
+
+    // Filter out categories with zero value
+    return Object.fromEntries(Object.entries(allocation).filter(([_, value]) => value > 0));
   };
 
   const allocation = calculateAssetAllocation();
 
   const chartData = {
-    labels: Object.keys(allocation).map(type => 
-      type.charAt(0).toUpperCase() + type.slice(1).toLowerCase().replace('_', ' ')
-    ),
+    labels: Object.keys(allocation).map(category => {
+      // Find the label for this category
+      const categoryInfo = ASSET_CATEGORIES.find((cat: { value: AssetCategory; label: string }) => cat.value === category as AssetCategory);
+      return categoryInfo ? categoryInfo.label : category.charAt(0).toUpperCase() + category.slice(1).replace('_', ' ');
+    }),
     datasets: [
       {
         label: 'Asset Allocation',
         data: Object.values(allocation),
-        backgroundColor: Object.keys(allocation).map(type => assetTypeColors[type as AssetType]),
-        borderColor: Object.keys(allocation).map(type => assetTypeColors[type as AssetType].replace('0.8', '1')),
+        backgroundColor: Object.keys(allocation).map(category => assetCategoryColors[category] || 'rgba(150, 150, 150, 0.8)'),
+        borderColor: Object.keys(allocation).map(category => 
+          (assetCategoryColors[category] || 'rgba(150, 150, 150, 0.8)').replace('0.8', '1')
+        ),
         borderWidth: 1,
       },
     ],

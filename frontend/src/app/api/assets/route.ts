@@ -16,10 +16,18 @@ export async function GET() {
     console.log('Connected to MongoDB, fetching assets...');
     
     // Only fetch assets belonging to the authenticated user
-    const assets = await Asset.find({ userId: auth.user?.id }).sort({ dateAdded: -1 });
-    console.log('Assets fetched:', assets);
+    const assets = await Asset.find({ userId: auth.user?.id }).sort({ dateAdded: -1 }).lean();
     
-    return NextResponse.json({ success: true, data: assets }, { status: 200 });
+    // Map MongoDB _id to id for frontend compatibility
+    const formattedAssets = assets.map(asset => ({
+      ...asset,
+      id: asset._id ? asset._id.toString() : '',
+      _id: undefined
+    }));
+    
+    console.log('Assets fetched and formatted:', formattedAssets);
+    
+    return NextResponse.json({ success: true, data: formattedAssets }, { status: 200 });
   } catch (error) {
     console.error('Error fetching assets:', error);
     // Return more detailed error information
@@ -53,7 +61,15 @@ export async function POST(request: NextRequest) {
     
     const asset = await Asset.create(assetData);
     
-    return NextResponse.json({ success: true, data: asset }, { status: 201 });
+    // Convert to plain object and map _id to id for frontend compatibility
+    const assetObj = asset.toObject();
+    const formattedAsset = {
+      ...assetObj,
+      id: assetObj._id.toString(),
+      _id: undefined
+    };
+    
+    return NextResponse.json({ success: true, data: formattedAsset }, { status: 201 });
   } catch (error) {
     console.error('Error creating asset:', error);
     return NextResponse.json(
