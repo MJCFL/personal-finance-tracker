@@ -1,48 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createTransaction } from '@/services/transactionService';
+import { BudgetCategory } from '@/types/budget';
+import { TransactionType } from '@/types/transaction';
 
 interface TransactionFormData {
-  type: 'income' | 'expense';
+  type: TransactionType;
   date: string;
   description: string;
   amount: string;
-  category: string;
-  source: string;
-  notes: string;
+  category: BudgetCategory;
+  accountId: string;
+  budgetId?: string;
   isRecurring: boolean;
-  recurringFrequency?: 'weekly' | 'monthly' | 'yearly';
+  recurringFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  tags?: string[];
 }
 
 interface AddTransactionModalProps {
-  isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: TransactionFormData) => void;
+  onTransactionAdded?: () => void;
+  accounts: any[];
 }
 
-const categories = [
-  'Income',
-  'Housing',
-  'Transportation',
-  'Food',
-  'Utilities',
-  'Insurance',
-  'Healthcare',
-  'Entertainment',
-  'Shopping',
-  'Other'
+const categories: BudgetCategory[] = [
+  BudgetCategory.HOUSING,
+  BudgetCategory.TRANSPORTATION,
+  BudgetCategory.FOOD,
+  BudgetCategory.ENTERTAINMENT,
+  BudgetCategory.HEALTHCARE,
+  BudgetCategory.EDUCATION,
+  BudgetCategory.PERSONAL,
+  BudgetCategory.UTILITIES,
+  BudgetCategory.INSURANCE,
+  BudgetCategory.SAVINGS,
+  BudgetCategory.OTHER
 ];
 
-export default function AddTransactionModal({ isOpen, onClose, onSubmit }: AddTransactionModalProps) {
+export default function AddTransactionModal({ onClose, onTransactionAdded, accounts }: AddTransactionModalProps) {
   const [formData, setFormData] = useState<TransactionFormData>({
-    type: 'expense',
+    type: TransactionType.EXPENSE,
     date: new Date().toISOString().split('T')[0],
     description: '',
     amount: '',
-    category: '',
-    source: '',
-    notes: '',
+    category: BudgetCategory.OTHER,
+    accountId: '',
     isRecurring: false,
-    recurringFrequency: undefined
+    recurringFrequency: undefined,
+    tags: []
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Set default account if available
+  useEffect(() => {
+    if (accounts.length > 0 && !formData.accountId) {
+      setFormData(prev => ({
+        ...prev,
+        accountId: accounts[0].id
+      }));
+    }
+  }, [accounts]);
 
   const handleInputChange = (field: keyof TransactionFormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -51,13 +69,43 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit }: AddTr
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
-    onClose();
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      // Convert amount to number
+      const amountValue = parseFloat(formData.amount);
+      
+      if (isNaN(amountValue)) {
+        throw new Error('Please enter a valid amount');
+      }
+      
+      // Create transaction object
+      const transactionData = {
+        ...formData,
+        amount: formData.type === TransactionType.INCOME ? amountValue : -Math.abs(amountValue),
+        date: new Date(formData.date)
+      };
+      
+      // Submit to API
+      await createTransaction(transactionData);
+      
+      // Notify parent component
+      if (onTransactionAdded) {
+        onTransactionAdded();
+      }
+      
+      // Close modal
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Failed to add transaction');
+      setIsSubmitting(false);
+    }
   };
 
-  if (!isOpen) return null;
+
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -93,6 +141,21 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit }: AddTr
               />
               <span>Income</span>
             </label>
+          </div>
+
+          {/* Date */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-1">Tags (comma separated)</label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., groceries, monthly, essential"
+              value={formData.tags?.join(', ') || ''}
+              onChange={(e) => {
+                const tagsArray = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
+                handleInputChange('tags', tagsArray as any);
+              }}
+            />
           </div>
 
           {/* Date */}
@@ -163,30 +226,20 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit }: AddTr
             </select>
           </div>
 
-          {/* Source */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Source
-            </label>
-            <input
-              type="text"
-              value={formData.source}
-              onChange={(e) => handleInputChange('source', e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={3}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
+          {/* Account */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-1">Account</label>
+            <select
+              className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.accountId}
+              onChange={(e) => handleInputChange('accountId', e.target.value)}
+            >
+              {accounts.map(account => (
+                <option key={account.id} value={account.id}>
+                  {account.name} (${account.balance.toLocaleString()})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Recurring Transaction */}
@@ -221,20 +274,34 @@ export default function AddTransactionModal({ isOpen, onClose, onSubmit }: AddTr
             </div>
           )}
 
-          {/* Submit Button */}
-          <div className="flex justify-end space-x-3">
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-500 text-red-300 rounded-lg">
+              {error}
+            </div>
+          )}
+          
+          <div className="flex justify-end mt-6 space-x-3">
             <button
               type="button"
+              className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center justify-center"
+              disabled={isSubmitting}
             >
-              Add Transaction
+              {isSubmitting ? (
+                <>
+                  <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></span>
+                  Processing...
+                </>
+              ) : (
+                'Add Transaction'
+              )}
             </button>
           </div>
         </form>

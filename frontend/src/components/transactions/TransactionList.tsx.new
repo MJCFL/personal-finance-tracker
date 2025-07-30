@@ -31,7 +31,8 @@ export default function TransactionList({
     setSelectedTransactions(prev =>
       prev.length === transactions.length
         ? []
-        : transactions.map(t => t.id || '').filter(Boolean)
+        : transactions.map(t => t.id || '') // Handle potentially undefined IDs
+            .filter(id => id !== '') // Filter out any empty IDs
     );
   };
 

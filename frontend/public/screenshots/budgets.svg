@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="500" fill="#1e293b"/>
+  <text x="400" y="50" font-family="Arial" font-size="24" fill="white" text-anchor="middle">Budget Management</text>
+  
+  <!-- Budget Cards -->
+  <rect x="50" y="80" width="220" height="180" rx="8" fill="#334155"/>
+  <text x="70" y="110" font-family="Arial" font-size="16" fill="white">Housing</text>
+  <text x="70" y="140" font-family="Arial" font-size="24" fill="#38bdf8">$1,200 / $1,500</text>
+  <rect x="70" y="160" width="180" height="20" rx="4" fill="#475569"/>
+  <rect x="70" y="160" width="144" height="20" rx="4" fill="#38bdf8"/>
+  <text x="70" y="200" font-family="Arial" font-size="14" fill="#a3e635">80% of budget used</text>
+  
+  <rect x="290" y="80" width="220" height="180" rx="8" fill="#334155"/>
+  <text x="310" y="110" font-family="Arial" font-size="16" fill="white">Food &amp; Groceries</text>
+  <text x="310" y="140" font-family="Arial" font-size="24" fill="#38bdf8">$450 / $500</text>
+  <rect x="310" y="160" width="180" height="20" rx="4" fill="#475569"/>
+  <rect x="310" y="160" width="162" height="20" rx="4" fill="#38bdf8"/>
+  <text x="310" y="200" font-family="Arial" font-size="14" fill="#ef4444">90% of budget used</text>
+  
+  <rect x="530" y="80" width="220" height="180" rx="8" fill="#334155"/>
+  <text x="550" y="110" font-family="Arial" font-size="16" fill="white">Transportation</text>
+  <text x="550" y="140" font-family="Arial" font-size="24" fill="#38bdf8">$180 / $300</text>
+  <rect x="550" y="160" width="180" height="20" rx="4" fill="#475569"/>
+  <rect x="550" y="160" width="108" height="20" rx="4" fill="#38bdf8"/>
+  <text x="550" y="200" font-family="Arial" font-size="14" fill="#a3e635">60% of budget used</text>
+  
+  <rect x="50" y="280" width="220" height="180" rx="8" fill="#334155"/>
+  <text x="70" y="310" font-family="Arial" font-size="16" fill="white">Entertainment</text>
+  <text x="70" y="340" font-family="Arial" font-size="24" fill="#38bdf8">$150 / $200</text>
+  <rect x="70" y="360" width="180" height="20" rx="4" fill="#475569"/>
+  <rect x="70" y="360" width="135" height="20" rx="4" fill="#38bdf8"/>
+  <text x="70" y="400" font-family="Arial" font-size="14" fill="#ef4444">75% of budget used</text>
+  
+  <rect x="290" y="280" width="220" height="180" rx="8" fill="#334155"/>
+  <text x="310" y="310" font-family="Arial" font-size="16" fill="white">Utilities</text>
+  <text x="310" y="340" font-family="Arial" font-size="24" fill="#38bdf8">$210 / $250</text>
+  <rect x="310" y="360" width="180" height="20" rx="4" fill="#475569"/>
+  <rect x="310" y="360" width="151" height="20" rx="4" fill="#38bdf8"/>
+  <text x="310" y="400" font-family="Arial" font-size="14" fill="#ef4444">84% of budget used</text>
+  
+  <rect x="530" y="280" width="220" height="180" rx="8" fill="#334155"/>
+  <text x="550" y="310" font-family="Arial" font-size="16" fill="white">Savings</text>
+  <text x="550" y="340" font-family="Arial" font-size="24" fill="#38bdf8">$500 / $500</text>
+  <rect x="550" y="360" width="180" height="20" rx="4" fill="#475569"/>
+  <rect x="550" y="360" width="180" height="20" rx="4" fill="#38bdf8"/>
+  <text x="550" y="400" font-family="Arial" font-size="14" fill="#a3e635">100% of goal reached</text>
+  
+  <!-- Add Budget Button -->
+  <rect x="50" y="480" width="150" height="40" rx="8" fill="#3b82f6" transform="translate(0, -30)"/>
+  <text x="125" y="495" font-family="Arial" font-size="14" fill="white" text-anchor="middle" transform="translate(0, -30)">Add New Budget</text>
+  
+  <!-- Monthly Summary -->
+  <text x="650" y="495" font-family="Arial" font-size="16" fill="white" text-anchor="end" transform="translate(0, -30)">Total Budget: $3,250.00</text>
+</svg>

@@ -1,7 +1,14 @@
 import { Asset } from '@/types/asset';
+import { demoAssetService } from './demoService';
+import Cookies from 'js-cookie';
 
 // Fetch all assets
 export async function getAssets(): Promise<Asset[]> {
+  // Check if in demo mode
+  if (Cookies.get('demoMode') === 'true') {
+    return demoAssetService.getAssets();
+  }
+  
   try {
     const response = await fetch('/api/assets');
     
@@ -20,6 +27,17 @@ export async function getAssets(): Promise<Asset[]> {
 
 // Create a new asset
 export async function createAsset(assetData: Omit<Asset, 'id' | 'dateAdded' | 'lastUpdated'>): Promise<Asset> {
+  // Check if in demo mode
+  if (Cookies.get('demoMode') === 'true') {
+    // Add required fields for demo service
+    const assetWithDates = {
+      ...assetData,
+      dateAdded: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+    return demoAssetService.createAsset(assetWithDates);
+  }
+  
   try {
     const response = await fetch('/api/assets', {
       method: 'POST',
@@ -44,6 +62,15 @@ export async function createAsset(assetData: Omit<Asset, 'id' | 'dateAdded' | 'l
 
 // Update an existing asset
 export async function updateAsset(id: string, assetData: Partial<Asset>): Promise<Asset> {
+  // Check if in demo mode
+  if (Cookies.get('demoMode') === 'true') {
+    const result = await demoAssetService.updateAsset(id, assetData);
+    if (!result) {
+      throw new Error('Asset not found');
+    }
+    return result;
+  }
+  
   try {
     const response = await fetch(`/api/assets/${id}`, {
       method: 'PUT',
@@ -68,6 +95,15 @@ export async function updateAsset(id: string, assetData: Partial<Asset>): Promis
 
 // Delete an asset
 export async function deleteAsset(id: string): Promise<void> {
+  // Check if in demo mode
+  if (Cookies.get('demoMode') === 'true') {
+    const result = await demoAssetService.deleteAsset(id);
+    if (!result) {
+      throw new Error('Asset not found');
+    }
+    return;
+  }
+  
   try {
     const response = await fetch(`/api/assets/${id}`, {
       method: 'DELETE',

@@ -2,7 +2,8 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import Cookies from 'js-cookie';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -12,13 +13,20 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Check for demo mode on component mount
+  useEffect(() => {
+    const demoMode = Cookies.get('demoMode') === 'true';
+    setIsDemoMode(demoMode);
+  }, []);
 
   useEffect(() => {
-    // If the user is not authenticated and the page is not loading, redirect to sign in
-    if (status === 'unauthenticated') {
+    // If the user is not authenticated and not in demo mode, redirect to sign in
+    if (status === 'unauthenticated' && !isDemoMode) {
       router.push(`/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`);
     }
-  }, [status, router, pathname]);
+  }, [status, router, pathname, isDemoMode]);
 
   // Show loading state while checking authentication
   if (status === 'loading') {
@@ -32,6 +40,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // If authenticated, render the children
-  return session ? <>{children}</> : null;
+  // If authenticated or in demo mode, render the children
+  return (session || isDemoMode) ? <>{children}</> : null;
 }

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="500" fill="#1e293b"/>
+  <text x="400" y="50" font-family="Arial" font-size="24" fill="white" text-anchor="middle">Financial Analytics</text>
+  
+  <!-- Spending by Category Chart -->
+  <rect x="50" y="80" width="340" height="180" rx="8" fill="#334155"/>
+  <text x="70" y="110" font-family="Arial" font-size="16" fill="white">Spending by Category</text>
+  
+  <!-- Pie Chart -->
+  <circle cx="220" cy="170" r="60" fill="#3b82f6"/>
+  <path d="M220,170 L220,110 A60,60 0 0,1 271,140 z" fill="#a855f7"/>
+  <path d="M220,170 L271,140 A60,60 0 0,1 260,200 z" fill="#ef4444"/>
+  <path d="M220,170 L260,200 A60,60 0 0,1 190,220 z" fill="#22c55e"/>
+  <path d="M220,170 L190,220 A60,60 0 0,1 160,140 z" fill="#eab308"/>
+  <path d="M220,170 L160,140 A60,60 0 0,1 220,110 z" fill="#ec4899"/>
+  
+  <!-- Legend -->
+  <rect x="70" y="240" width="10" height="10" fill="#3b82f6"/>
+  <text x="90" y="250" font-family="Arial" font-size="12" fill="white">Housing (30%)</text>
+  
+  <rect x="180" y="240" width="10" height="10" fill="#a855f7"/>
+  <text x="200" y="250" font-family="Arial" font-size="12" fill="white">Food (20%)</text>
+  
+  <rect x="270" y="240" width="10" height="10" fill="#ef4444"/>
+  <text x="290" y="250" font-family="Arial" font-size="12" fill="white">Transport (15%)</text>
+  
+  <rect x="70" y="270" width="10" height="10" fill="#22c55e"/>
+  <text x="90" y="280" font-family="Arial" font-size="12" fill="white">Utilities (12%)</text>
+  
+  <rect x="180" y="270" width="10" height="10" fill="#eab308"/>
+  <text x="200" y="280" font-family="Arial" font-size="12" fill="white">Entertainment (13%)</text>
+  
+  <rect x="270" y="270" width="10" height="10" fill="#ec4899"/>
+  <text x="290" y="280" font-family="Arial" font-size="12" fill="white">Other (10%)</text>
+  
+  <!-- Income vs Expenses Chart -->
+  <rect x="410" y="80" width="340" height="180" rx="8" fill="#334155"/>
+  <text x="430" y="110" font-family="Arial" font-size="16" fill="white">Income vs Expenses (6 Months)</text>
+  
+  <!-- Bar Chart -->
+  <line x1="430" y1="220" x2="730" y2="220" stroke="#475569" stroke-width="2"/>
+  <line x1="430" y1="220" x2="430" y2="130" stroke="#475569" stroke-width="2"/>
+  
+  <!-- Income Bars -->
+  <rect x="450" y="160" width="20" height="60" fill="#22c55e"/>
+  <rect x="500" y="150" width="20" height="70" fill="#22c55e"/>
+  <rect x="550" y="140" width="20" height="80" fill="#22c55e"/>
+  <rect x="600" y="130" width="20" height="90" fill="#22c55e"/>
+  <rect x="650" y="140" width="20" height="80" fill="#22c55e"/>
+  <rect x="700" y="150" width="20" height="70" fill="#22c55e"/>
+  
+  <!-- Expense Bars -->
+  <rect x="475" y="180" width="20" height="40" fill="#ef4444"/>
+  <rect x="525" y="170" width="20" height="50" fill="#ef4444"/>
+  <rect x="575" y="175" width="20" height="45" fill="#ef4444"/>
+  <rect x="625" y="160" width="20" height="60" fill="#ef4444"/>
+  <rect x="675" y="165" width="20" height="55" fill="#ef4444"/>
+  <rect x="725" y="170" width="20" height="50" fill="#ef4444"/>
+  
+  <!-- Month Labels -->
+  <text x="460" y="235" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Feb</text>
+  <text x="510" y="235" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Mar</text>
+  <text x="560" y="235" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Apr</text>
+  <text x="610" y="235" font-family="Arial" font-size="10" fill="white" text-anchor="middle">May</text>
+  <text x="660" y="235" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Jun</text>
+  <text x="710" y="235" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Jul</text>
+  
+  <!-- Net Worth Trend -->
+  <rect x="50" y="300" width="700" height="180" rx="8" fill="#334155"/>
+  <text x="70" y="330" font-family="Arial" font-size="16" fill="white">Net Worth Trend</text>
+  
+  <!-- Line Chart -->
+  <line x1="70" y1="430" x2="730" y2="430" stroke="#475569" stroke-width="2"/>
+  
+  <!-- Net Worth Line -->
+  <path d="M70,400 L150,390 L230,380 L310,385 L390,370 L470,350 L550,340 L630,320 L710,300" stroke="#38bdf8" stroke-width="3" fill="none"/>
+  
+  <!-- Points on Line -->
+  <circle cx="70" cy="400" r="4" fill="#38bdf8"/>
+  <circle cx="150" cy="390" r="4" fill="#38bdf8"/>
+  <circle cx="230" cy="380" r="4" fill="#38bdf8"/>
+  <circle cx="310" cy="385" r="4" fill="#38bdf8"/>
+  <circle cx="390" cy="370" r="4" fill="#38bdf8"/>
+  <circle cx="470" cy="350" r="4" fill="#38bdf8"/>
+  <circle cx="550" cy="340" r="4" fill="#38bdf8"/>
+  <circle cx="630" cy="320" r="4" fill="#38bdf8"/>
+  <circle cx="710" cy="300" r="4" fill="#38bdf8"/>
+  
+  <!-- Month Labels -->
+  <text x="70" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Jan</text>
+  <text x="150" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Feb</text>
+  <text x="230" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Mar</text>
+  <text x="310" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Apr</text>
+  <text x="390" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">May</text>
+  <text x="470" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Jun</text>
+  <text x="550" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Jul</text>
+  <text x="630" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Aug</text>
+  <text x="710" y="445" font-family="Arial" font-size="10" fill="white" text-anchor="middle">Sep</text>
+  
+  <!-- Value Labels -->
+  <text x="40" y="400" font-family="Arial" font-size="10" fill="white" text-anchor="end">$100k</text>
+  <text x="40" y="370" font-family="Arial" font-size="10" fill="white" text-anchor="end">$120k</text>
+  <text x="40" y="340" font-family="Arial" font-size="10" fill="white" text-anchor="end">$140k</text>
+  <text x="40" y="310" font-family="Arial" font-size="10" fill="white" text-anchor="end">$160k</text>
+</svg>

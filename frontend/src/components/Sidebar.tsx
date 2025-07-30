@@ -15,6 +15,7 @@ export default function Sidebar() {
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
+    { name: 'Accounts', href: '/accounts', icon: BanknotesIcon },
     { name: 'Transactions', href: '/transactions', icon: BanknotesIcon },
     { name: 'Assets', href: '/assets', icon: ChartBarIcon },
     { name: 'Analytics', href: '/analytics', icon: PresentationChartLineIcon },

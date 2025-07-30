@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="800" height="500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="800" height="500" fill="#1e293b"/>
+  <text x="400" y="50" font-family="Arial" font-size="24" fill="white" text-anchor="middle">Assets</text>
+  
+  <!-- Asset List Table -->
+  <rect x="50" y="80" width="700" height="320" rx="8" fill="#334155"/>
+  
+  <!-- Table Header -->
+  <rect x="50" y="80" width="700" height="40" rx="8" fill="#475569"/>
+  <text x="70" y="105" font-family="Arial" font-size="14" fill="white">Name</text>
+  <text x="270" y="105" font-family="Arial" font-size="14" fill="white">Type</text>
+  <text x="370" y="105" font-family="Arial" font-size="14" fill="white">Category</text>
+  <text x="470" y="105" font-family="Arial" font-size="14" fill="white">Value</text>
+  <text x="570" y="105" font-family="Arial" font-size="14" fill="white">Quantity</text>
+  <text x="670" y="105" font-family="Arial" font-size="14" fill="white">Actions</text>
+  
+  <!-- Table Rows -->
+  <rect x="50" y="120" width="700" height="40" fill="#334155"/>
+  <text x="70" y="145" font-family="Arial" font-size="14" fill="white">Apple Inc.</text>
+  <text x="270" y="145" font-family="Arial" font-size="14" fill="white">Stock</text>
+  <text x="370" y="145" font-family="Arial" font-size="14" fill="white">Stocks</text>
+  <text x="470" y="145" font-family="Arial" font-size="14" fill="white">$15,000.00</text>
+  <text x="570" y="145" font-family="Arial" font-size="14" fill="white">100</text>
+  <rect x="650" y="130" width="20" height="20" rx="4" fill="#3b82f6"/>
+  <rect x="680" y="130" width="20" height="20" rx="4" fill="#ef4444"/>
+  
+  <rect x="50" y="160" width="700" height="40" fill="#1e293b"/>
+  <text x="70" y="185" font-family="Arial" font-size="14" fill="white">Rental Property</text>
+  <text x="270" y="185" font-family="Arial" font-size="14" fill="white">Real Estate</text>
+  <text x="370" y="185" font-family="Arial" font-size="14" fill="white">Real Estate</text>
+  <text x="470" y="185" font-family="Arial" font-size="14" fill="white">$350,000.00</text>
+  <text x="570" y="185" font-family="Arial" font-size="14" fill="white">1</text>
+  <rect x="650" y="170" width="20" height="20" rx="4" fill="#3b82f6"/>
+  <rect x="680" y="170" width="20" height="20" rx="4" fill="#ef4444"/>
+  
+  <rect x="50" y="200" width="700" height="40" fill="#334155"/>
+  <text x="70" y="225" font-family="Arial" font-size="14" fill="white">Savings Account</text>
+  <text x="270" y="225" font-family="Arial" font-size="14" fill="white">Cash</text>
+  <text x="370" y="225" font-family="Arial" font-size="14" fill="white">Bank</text>
+  <text x="470" y="225" font-family="Arial" font-size="14" fill="white">$25,000.00</text>
+  <text x="570" y="225" font-family="Arial" font-size="14" fill="white">-</text>
+  <rect x="650" y="210" width="20" height="20" rx="4" fill="#3b82f6"/>
+  <rect x="680" y="210" width="20" height="20" rx="4" fill="#ef4444"/>
+  
+  <rect x="50" y="240" width="700" height="40" fill="#1e293b"/>
+  <text x="70" y="265" font-family="Arial" font-size="14" fill="white">Microsoft Corp.</text>
+  <text x="270" y="265" font-family="Arial" font-size="14" fill="white">Stock</text>
+  <text x="370" y="265" font-family="Arial" font-size="14" fill="white">Stocks</text>
+  <text x="470" y="265" font-family="Arial" font-size="14" fill="white">$28,450.00</text>
+  <text x="570" y="265" font-family="Arial" font-size="14" fill="white">75</text>
+  <rect x="650" y="250" width="20" height="20" rx="4" fill="#3b82f6"/>
+  <rect x="680" y="250" width="20" height="20" rx="4" fill="#ef4444"/>
+  
+  <rect x="50" y="280" width="700" height="40" fill="#334155"/>
+  <text x="70" y="305" font-family="Arial" font-size="14" fill="white">401(k)</text>
+  <text x="270" y="305" font-family="Arial" font-size="14" fill="white">Retirement</text>
+  <text x="370" y="305" font-family="Arial" font-size="14" fill="white">Retirement</text>
+  <text x="470" y="305" font-family="Arial" font-size="14" fill="white">$120,000.00</text>
+  <text x="570" y="305" font-family="Arial" font-size="14" fill="white">-</text>
+  <rect x="650" y="290" width="20" height="20" rx="4" fill="#3b82f6"/>
+  <rect x="680" y="290" width="20" height="20" rx="4" fill="#ef4444"/>
+  
+  <!-- Add Asset Button -->
+  <rect x="50" y="420" width="150" height="40" rx="8" fill="#3b82f6"/>
+  <text x="125" y="445" font-family="Arial" font-size="14" fill="white" text-anchor="middle">Add New Asset</text>
+  
+  <!-- Total Value -->
+  <text x="650" y="445" font-family="Arial" font-size="16" fill="white" text-anchor="end">Total Value: $538,450.00</text>
+</svg>

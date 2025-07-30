@@ -1,162 +1,172 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import TransactionSummary from '@/components/transactions/TransactionSummary';
 import CategoryBreakdown from '@/components/transactions/CategoryBreakdown';
 import TransactionList from '@/components/transactions/TransactionList';
-import { Transaction } from '@/types/transaction';
+import { getTransactions, TransactionData } from '@/services/transactionService';
+import { getAccounts } from '@/services/accountService';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ErrorMessage from '@/components/ui/ErrorMessage';
+import AddTransactionModal from '@/components/transactions/AddTransactionModal';
 
-const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    date: '2025-04-08',
-    description: 'Monthly Salary',
-    amount: 5000,
-    category: 'Income',
-    type: 'income',
-    source: 'Employer Inc.',
-    account: 'Main Account',
-  },
-  {
-    id: '2',
-    date: '2025-04-07',
-    description: 'Grocery Shopping',
-    amount: -150.75,
-    category: 'Food',
-    type: 'expense',
-    source: 'Whole Foods',
-    account: 'Credit Card',
-  },
-  // Add more mock transactions as needed
-];
-
-const mockCategories = [
-  {
-    name: 'Food',
-    amount: 850.25,
-    percentage: 35,
-    icon: '🍔',
-    color: '#22c55e',
-    change: -5.2,
-  },
-  {
-    name: 'Transportation',
-    amount: 450.50,
-    percentage: 18,
-    icon: '🚗',
-    color: '#3b82f6',
-    change: 2.8,
-  },
-  {
-    name: 'Entertainment',
-    amount: 320.75,
-    percentage: 13,
-    icon: '🎮',
-    color: '#a855f7',
-    change: 1.5,
-  },
-  {
-    name: 'Shopping',
-    amount: 280.30,
-    percentage: 11,
-    icon: '🛍️',
-    color: '#f43f5e',
-    change: -3.1,
-  },
-  {
-    name: 'Utilities',
-    amount: 245.80,
-    percentage: 10,
-    icon: '💡',
-    color: '#f59e0b',
-    change: 0.8,
-  },
-];
-
+// Category and icon mappings for UI display
 const categoryColors = {
-  Food: '#22c55e',
-  Shopping: '#3b82f6',
-  Transportation: '#f59e0b',
+  Housing: '#22c55e',
+  Transportation: '#3b82f6',
+  Food: '#f59e0b',
   Entertainment: '#8b5cf6',
-  Bills: '#ef4444',
-  Income: '#10b981',
+  Healthcare: '#ef4444',
+  Education: '#10b981',
+  Personal: '#6b7280',
+  Utilities: '#ec4899',
+  Insurance: '#14b8a6',
+  Savings: '#f97316',
+  Income: '#84cc16',
   Other: '#6b7280',
 };
 
 const categoryIcons = {
-  Food: '🍽️',
-  Shopping: '🛍️',
+  Housing: '🏠',
   Transportation: '🚗',
+  Food: '🍽️',
   Entertainment: '🎮',
-  Bills: '📄',
-  Income: '💰',
+  Healthcare: '🏥',
+  Education: '📚',
+  Personal: '👤',
+  Utilities: '💡',
+  Insurance: '🛡️',
+  Savings: '💰',
+  Income: '💵',
   Other: '📦',
 };
 
-const mockAccounts = [
-  { id: '1', name: 'Main Checking', institution: 'Big Bank', balance: 5000 },
-  { id: '2', name: 'Savings', institution: 'Small Bank', balance: 10000 },
-];
+
+
+
 
 export default function TransactionsPage() {
-  const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCategory, setSelectedCategory] = React.useState('all');
-  const [selectedBank, setSelectedBank] = React.useState('all');
-  const [startDate, setStartDate] = React.useState<Date | null>(null);
-  const [endDate, setEndDate] = React.useState<Date | null>(null);
+  return (
+    <ProtectedRoute>
+      <TransactionsPageContent />
+    </ProtectedRoute>
+  );
+}
 
-  // Get unique categories and banks
-  const categories = ['all', ...new Set(mockTransactions.map(t => t.category))];
-  const banks = ['all', ...new Set(mockAccounts.map(a => a.institution))];
-
-  // Filter transactions based on all criteria
-  const filteredTransactions = mockTransactions.filter(transaction => {
-    const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
-    const matchesBank = selectedBank === 'all' || transaction.account?.includes(selectedBank);
+function TransactionsPageContent() {
+  const { data: session } = useSession();
+  const [transactions, setTransactions] = useState<TransactionData[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedBank, setSelectedBank] = useState('all');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  
+  // Fetch transactions and accounts data
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // Fetch transactions with filters
+        const filters: any = {};
+        if (selectedCategory !== 'all') filters.category = selectedCategory;
+        if (selectedBank !== 'all') filters.accountId = selectedBank;
+        if (startDate) filters.startDate = startDate;
+        if (endDate) filters.endDate = endDate;
+        
+        const transactionResponse = await getTransactions(filters);
+        setTransactions(transactionResponse.transactions);
+        
+        // Fetch accounts for filtering
+        const accountsData = await getAccounts();
+        setAccounts(accountsData);
+        
+        setIsLoading(false);
+      } catch (err: any) {
+        setError(err.message || 'Failed to load transactions');
+        setIsLoading(false);
+      }
+    }
     
-    // Date filtering
-    const transactionDate = new Date(transaction.date);
-    const matchesDateRange = (!startDate || transactionDate >= startDate) && 
-                           (!endDate || transactionDate <= endDate);
+    fetchData();
+  }, [selectedCategory, selectedBank, startDate, endDate]);
 
-    return matchesSearch && matchesCategory && matchesBank && matchesDateRange;
+  // Get unique categories and banks for filtering
+  const categories = ['all', ...new Set(transactions.map(t => t.category))];
+  const banks = ['all', ...new Set(accounts.map(a => a.id))];
+  
+  // Map account IDs to names for display
+  const accountMap = accounts.reduce((map, account) => {
+    map[account.id] = account.name;
+    return map;
+  }, {} as Record<string, string>);
+
+  // Filter transactions based on search term
+  const filteredTransactions = transactions.filter(transaction => {
+    return transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   // Calculate statistics
   const stats = {
     income: filteredTransactions
-      .filter(t => t.amount > 0)
+      .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0),
-    expenses: Math.abs(filteredTransactions
-      .filter(t => t.amount < 0)
-      .reduce((sum, t) => sum + t.amount, 0)),
+    expenses: filteredTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0),
     netIncome: filteredTransactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0) - 
+      filteredTransactions
+      .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0),
-    monthlyChange: 250.75, // Mock monthly change
+    monthlyChange: 0, // Will calculate if we have previous month data
   };
 
-  // Calculate category breakdown
+  // Calculate category breakdown for expenses
   const categoryBreakdown = Object.entries(
     filteredTransactions
-      .filter(t => t.amount < 0) // Only include expenses
+      .filter(t => t.type === 'expense')
       .reduce((acc, t) => {
-        if (t.category !== 'Income') {
-          acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount);
-        }
+        acc[t.category] = (acc[t.category] || 0) + t.amount;
         return acc;
       }, {} as Record<string, number>)
   ).map(([name, amount]) => ({
     name,
     amount,
-    percentage: (amount / stats.expenses) * 100,
+    percentage: stats.expenses > 0 ? (amount / stats.expenses) * 100 : 0,
     icon: categoryIcons[name as keyof typeof categoryIcons] || '📦',
     color: categoryColors[name as keyof typeof categoryColors] || '#6b7280',
-    change: Math.random() * 20 - 10, // Mock change percentage
+    change: 0, // Would need historical data to calculate real change
   }));
+  
+  // Handle transaction refresh after adding/editing
+  const handleTransactionChange = async () => {
+    try {
+      setIsLoading(true);
+      const transactionResponse = await getTransactions();
+      setTransactions(transactionResponse.transactions);
+      setIsLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to refresh transactions');
+      setIsLoading(false);
+    }
+  };
+
+  if (error) {
+    return <ErrorMessage message={error} />;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -169,7 +179,10 @@ export default function TransactionsPage() {
             <button className="px-4 py-2 bg-gray-800 text-white text-sm rounded-xl hover:bg-gray-700 transition-colors">
               Export
             </button>
-            <button className="px-4 py-2 bg-blue-500 text-white text-sm rounded-xl hover:bg-blue-600 transition-colors">
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 bg-blue-500 text-white text-sm rounded-xl hover:bg-blue-600 transition-colors"
+            >
               Add Transaction
             </button>
           </div>
@@ -245,9 +258,9 @@ export default function TransactionsPage() {
                     value={selectedBank}
                     onChange={(e) => setSelectedBank(e.target.value)}
                   >
-                    {banks.map(bank => (
-                      <option key={bank} value={bank}>
-                        {bank === 'all' ? 'All Banks' : bank}
+                    {banks.map(bankId => (
+                      <option key={bankId} value={bankId}>
+                        {bankId === 'all' ? 'All Accounts' : accountMap[bankId] || bankId}
                       </option>
                     ))}
                   </select>
@@ -273,7 +286,12 @@ export default function TransactionsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <TransactionList transactions={filteredTransactions} />
+            <TransactionList 
+              transactions={filteredTransactions} 
+              isLoading={isLoading} 
+              accountMap={accountMap} 
+              onTransactionChange={handleTransactionChange}
+            />
           </div>
           <div className="lg:col-span-1">
             <CategoryBreakdown
@@ -283,6 +301,15 @@ export default function TransactionsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Add Transaction Modal */}
+      {showAddModal && (
+        <AddTransactionModal 
+          onClose={() => setShowAddModal(false)}
+          onTransactionAdded={handleTransactionChange}
+          accounts={accounts}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -11,6 +13,14 @@ interface ResponsiveLayoutProps {
 export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  
+  // Check if we're on the landing page
+  const isLandingPage = pathname === '/landing';
+  
+  // Show sidebar only if authenticated or not on landing page
+  const showSidebar = !!session || !isLandingPage;
 
   // Check if we're on a mobile device
   useEffect(() => {
@@ -53,29 +63,31 @@ export default function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   return (
     <div className="flex h-screen bg-[var(--background)]">
       {/* Mobile sidebar backdrop */}
-      {isMobile && sidebarOpen && (
+      {showSidebar && isMobile && sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-20"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <div 
-        id="sidebar"
-        className={`
-          ${isMobile ? 'fixed z-30' : 'relative'} 
-          ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
-          transition-transform duration-300 ease-in-out
-        `}
-      >
-        <Sidebar />
-      </div>
+      {/* Sidebar - only shown when authenticated or not on landing page */}
+      {showSidebar && (
+        <div 
+          id="sidebar"
+          className={`
+            ${isMobile ? 'fixed z-30' : 'relative'} 
+            ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+            transition-transform duration-300 ease-in-out
+          `}
+        >
+          <Sidebar />
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile header with menu button */}
-        {isMobile && (
+        {/* Mobile header with menu button - only shown when sidebar is available */}
+        {showSidebar && isMobile && (
           <header className="bg-[var(--card)] border-b border-[var(--border)] p-4 flex items-center">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
