@@ -1,6 +1,4 @@
 import { AccountType } from '@/types/account';
-import { demoAccountService } from './demoService';
-import Cookies from 'js-cookie';
 
 export interface AccountData {
   id?: string;
@@ -18,20 +16,6 @@ export async function getAccounts(filters?: {
   type?: AccountType;
   isActive?: boolean;
 }): Promise<AccountData[]> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    const accounts = await demoAccountService.getAccounts();
-    // Apply filters if provided
-    if (filters) {
-      return accounts.filter(account => {
-        if (filters.type && account.type !== filters.type) return false;
-        if (filters.isActive !== undefined && account.isActive !== filters.isActive) return false;
-        return true;
-      });
-    }
-    return accounts;
-  }
-  
   try {
     // Build query parameters
     const queryParams = new URLSearchParams();
@@ -62,15 +46,6 @@ export async function getAccounts(filters?: {
 
 // Get account by ID
 export async function getAccountById(id: string): Promise<AccountData> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    const account = await demoAccountService.getAccountById(id);
-    if (!account) {
-      throw new Error(`Account with ID ${id} not found`);
-    }
-    return account;
-  }
-  
   try {
     const response = await fetch(`/api/accounts/${id}`, {
       method: 'GET',
@@ -93,16 +68,6 @@ export async function getAccountById(id: string): Promise<AccountData> {
 
 // Create a new account
 export async function createAccount(accountData: AccountData): Promise<AccountData> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    // Add userId for demo service
-    const accountWithUserId = {
-      ...accountData,
-      userId: 'demo-user'
-    };
-    return demoAccountService.createAccount(accountWithUserId);
-  }
-  
   try {
     const response = await fetch('/api/accounts', {
       method: 'POST',
@@ -126,15 +91,6 @@ export async function createAccount(accountData: AccountData): Promise<AccountDa
 
 // Update an existing account
 export async function updateAccount(id: string, accountData: Partial<AccountData>): Promise<AccountData> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    const result = await demoAccountService.updateAccount(id, accountData as any);
-    if (!result) {
-      throw new Error(`Account with ID ${id} not found`);
-    }
-    return result;
-  }
-  
   try {
     const response = await fetch(`/api/accounts/${id}`, {
       method: 'PUT',
@@ -158,12 +114,6 @@ export async function updateAccount(id: string, accountData: Partial<AccountData
 
 // Delete an account
 export async function deleteAccount(id: string): Promise<void> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    await demoAccountService.deleteAccount(id);
-    return;
-  }
-  
   try {
     const response = await fetch(`/api/accounts/${id}`, {
       method: 'DELETE',

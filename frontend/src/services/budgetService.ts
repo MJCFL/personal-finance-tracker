@@ -173,17 +173,83 @@ export async function createBudget(budgetData: BudgetFormData): Promise<Budget> 
     return demoBudgetService.createBudget(budgetData);
   }
   
+  // Validate required fields
+  if (!budgetData.name || budgetData.name.trim() === '') {
+    throw new Error('Budget name is required');
+  }
+  
+  if (budgetData.amount < 0) {
+    throw new Error('Budget amount cannot be negative');
+  }
+  
+  // Ensure dates are properly formatted as ISO strings
+  // Make sure we have a valid date object first
+  let startDate: Date;
+  try {
+    startDate = new Date(budgetData.startDate);
+    if (isNaN(startDate.getTime())) {
+      throw new Error('Invalid start date');
+    }
+  } catch (error) {
+    throw new Error('Invalid start date format');
+  }
+  
+  // Check end date if provided
+  let endDate: Date | undefined;
+  if (budgetData.endDate && budgetData.endDate.trim() !== '') {
+    try {
+      endDate = new Date(budgetData.endDate);
+      if (isNaN(endDate.getTime())) {
+        throw new Error('Invalid end date');
+      }
+    } catch (error) {
+      throw new Error('Invalid end date format');
+    }
+  }
+  
+  // Create a properly formatted data object
+  const formattedData = {
+    ...budgetData,
+    startDate: startDate.toISOString(),
+    endDate: endDate ? endDate.toISOString() : undefined
+  };
+  
+  console.log('Sending budget data to API:', formattedData);
+  
   const response = await fetch('/api/budgets', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(budgetData),
+    body: JSON.stringify(formattedData),
+    // Ensure credentials are included for authentication cookies
+    credentials: 'include'
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create budget');
+    let errorData;
+    try {
+      errorData = await response.json();
+      console.error('Budget API error response:', errorData);
+    } catch (e) {
+      console.error('Failed to parse error response:', e);
+      errorData = { error: `HTTP error ${response.status}` };
+    }
+    
+    // Handle authentication errors specifically
+    if (response.status === 401) {
+      throw new Error('Authentication required. Please sign in to create a budget.');
+    }
+    
+    // Create a custom error object with validation details
+    const error: any = new Error(errorData.error || 'Failed to create budget');
+    
+    // Add validation errors if present
+    if (errorData.validationErrors) {
+      error.validationErrors = errorData.validationErrors;
+    }
+    
+    throw error;
   }
 
   return response.json();

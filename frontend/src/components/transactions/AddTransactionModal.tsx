@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createTransaction } from '@/services/transactionService';
-import { BudgetCategory } from '@/types/budget';
-import { TransactionType } from '@/types/transaction';
+import { BudgetCategory, TransactionType } from '@/types/commonTypes';
 
 interface TransactionFormData {
   type: TransactionType;
@@ -75,19 +74,30 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
     setError(null);
     
     try {
+      // Validate required fields
+      if (!formData.accountId) {
+        throw new Error('Please select an account');
+      }
+      
+      if (!formData.description.trim()) {
+        throw new Error('Please enter a description');
+      }
+      
       // Convert amount to number
       const amountValue = parseFloat(formData.amount);
       
-      if (isNaN(amountValue)) {
-        throw new Error('Please enter a valid amount');
+      if (isNaN(amountValue) || amountValue <= 0) {
+        throw new Error('Please enter a valid amount greater than zero');
       }
       
       // Create transaction object
       const transactionData = {
         ...formData,
-        amount: formData.type === TransactionType.INCOME ? amountValue : -Math.abs(amountValue),
+        amount: formData.type === TransactionType.INCOME ? amountValue : Math.abs(amountValue),
         date: new Date(formData.date)
       };
+      
+      console.log('Submitting transaction:', transactionData);
       
       // Submit to API
       await createTransaction(transactionData);
@@ -100,6 +110,7 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
       // Close modal
       onClose();
     } catch (err: any) {
+      console.error('Transaction error:', err);
       setError(err.message || 'Failed to add transaction');
       setIsSubmitting(false);
     }

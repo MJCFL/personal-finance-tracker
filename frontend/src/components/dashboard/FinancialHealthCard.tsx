@@ -1,6 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAccounts } from '@/services/accountService';
+import { getTransactions } from '@/services/transactionService';
+import { TransactionType } from '@/types/commonTypes';
 
 interface HealthMetric {
   name: string;
@@ -9,31 +12,78 @@ interface HealthMetric {
   description: string;
 }
 
-const mockHealthMetrics: HealthMetric[] = [
-  {
-    name: 'Savings Rate',
-    score: 85,
-    status: 'good',
-    description: 'You\'re saving 25% of your income'
-  },
-  {
-    name: 'Debt Ratio',
-    score: 70,
-    status: 'warning',
-    description: 'Debt payments are 32% of income'
-  },
-  {
-    name: 'Emergency Fund',
-    score: 90,
-    status: 'good',
-    description: '4.5 months of expenses saved'
-  }
-];
-
 export default function FinancialHealthCard() {
-  const overallScore = Math.round(
-    mockHealthMetrics.reduce((sum, metric) => sum + metric.score, 0) / mockHealthMetrics.length
-  );
+  const [healthMetrics, setHealthMetrics] = useState<HealthMetric[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    async function fetchHealthData() {
+      try {
+        setLoading(true);
+        
+        // Fetch accounts and transactions to calculate health metrics
+        const accountsResponse = await getAccounts();
+        const accounts = accountsResponse.accounts || [];
+        
+        // Get transactions from the last 3 months
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 3);
+        
+        const { transactions } = await getTransactions({ startDate, endDate });
+        
+        // Only calculate metrics if we have data
+        if (!accounts || !Array.isArray(accounts) || accounts.length === 0 || !transactions || transactions.length === 0) {
+          setHealthMetrics([]);
+          return;
+        }
+        
+        const metrics: HealthMetric[] = [];
+        
+        // Calculate metrics based on real data
+        // 1. Savings Rate
+        const incomeTransactions = transactions.filter(t => t.type === TransactionType.INCOME);
+        const totalIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+        
+        // Find transfers to savings accounts
+        const savingsTransactions = transactions.filter(t => 
+          t.type === TransactionType.TRANSFER && 
+          accounts.some((a: any) => a.id === t.accountId && a.type === 'Savings')
+        );
+        const totalSavings = savingsTransactions.reduce((sum, t) => sum + t.amount, 0);
+        
+        if (totalIncome > 0) {
+          const savingsRate = (totalSavings / totalIncome) * 100;
+          let savingsStatus: 'good' | 'warning' | 'danger' = 'danger';
+          
+          if (savingsRate >= 20) savingsStatus = 'good';
+          else if (savingsRate >= 10) savingsStatus = 'warning';
+          
+          metrics.push({
+            name: 'Savings Rate',
+            score: Math.min(Math.round(savingsRate * 5), 100), // Scale for score
+            status: savingsStatus,
+            description: `You're saving ${savingsRate.toFixed(1)}% of your income`
+          });
+        }
+        
+        setHealthMetrics(metrics);
+      } catch (err) {
+        console.error('Error fetching health metrics:', err);
+        setError('Failed to load health metrics');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchHealthData();
+  }, []);
+  
+  // Calculate overall score or use default
+  const overallScore = healthMetrics.length > 0 ?
+    Math.round(healthMetrics.reduce((sum, metric) => sum + metric.score, 0) / healthMetrics.length) :
+    0; // Default score when no metrics available
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -62,17 +112,25 @@ export default function FinancialHealthCard() {
       </div>
 
       <div className="space-y-4">
-        {mockHealthMetrics.map((metric) => (
-          <div key={metric.name} className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">{metric.name}</p>
-              <p className="text-xs text-gray-500">{metric.description}</p>
+        {loading ? (
+          <p className="text-sm text-gray-500">Loading health metrics...</p>
+        ) : error ? (
+          <p className="text-sm text-red-500">{error}</p>
+        ) : healthMetrics.length === 0 ? (
+          <p className="text-sm text-gray-500">No health metrics available yet. Add transactions and accounts to see insights.</p>
+        ) : (
+          healthMetrics.map((metric: HealthMetric) => (
+            <div key={metric.name} className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{metric.name}</p>
+                <p className="text-xs text-gray-500">{metric.description}</p>
+              </div>
+              <div className={`px-3 py-1 rounded-full ${getStatusColor(metric.status)}`}>
+                <span className="text-sm font-medium">{metric.score}</span>
+              </div>
             </div>
-            <div className={`px-3 py-1 rounded-full ${getStatusColor(metric.status)}`}>
-              <span className="text-sm font-medium">{metric.score}</span>
-            </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );

@@ -31,8 +31,16 @@ export async function GET(req: NextRequest) {
 
     // Fetch accounts
     const accounts = await Account.find(query).sort({ createdAt: -1 });
+    
+    // Map MongoDB _id to id for frontend compatibility
+    const mappedAccounts = accounts.map(account => {
+      const accountObj = account.toObject();
+      accountObj.id = accountObj._id.toString();
+      delete accountObj._id;
+      return accountObj;
+    });
 
-    return NextResponse.json(accounts);
+    return NextResponse.json(mappedAccounts);
   } catch (error: any) {
     console.error('Error fetching accounts:', error);
     return NextResponse.json(
@@ -65,8 +73,13 @@ export async function POST(req: NextRequest) {
       ...body,
       userId: session.user.id,
     });
+    
+    // Map MongoDB _id to id for frontend compatibility
+    const accountObj = account.toObject();
+    accountObj.id = accountObj._id.toString();
+    delete accountObj._id;
 
-    return NextResponse.json(account, { status: 201 });
+    return NextResponse.json(accountObj, { status: 201 });
   } catch (error: any) {
     console.error('Error creating account:', error);
     return NextResponse.json(

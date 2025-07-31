@@ -1,11 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { BudgetCategory } from './Budget';
-
-export enum TransactionType {
-  INCOME = 'income',
-  EXPENSE = 'expense',
-  TRANSFER = 'transfer',
-}
+import { BudgetCategory, TransactionType } from '../types/commonTypes';
 
 export interface TransactionDocument extends mongoose.Document {
   userId: string;

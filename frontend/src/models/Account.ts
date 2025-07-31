@@ -1,5 +1,3 @@
-'use server';
-
 import mongoose, { Schema } from 'mongoose';
 
 export enum AccountType {

@@ -1,16 +1,65 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  mockSpendingPatterns,
-  mockAnomalies,
-  mockRecommendations,
-  mockSavingsGoals,
-  mockCategoryInsights
-} from '@/data/mockInsights';
+  getSpendingPatterns,
+  getAnomalies,
+  getRecommendations,
+  getSavingsGoals,
+  getCategoryInsights,
+  SpendingPattern,
+  Anomaly,
+  Recommendation,
+  SavingsGoal,
+  CategoryInsight
+} from '@/services/insightsService';
 
 export default function Insights() {
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [spendingPatterns, setSpendingPatterns] = useState<SpendingPattern[]>([]);
+  const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const [categoryInsights, setCategoryInsights] = useState<CategoryInsight[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchInsightsData() {
+      try {
+        setLoading(true);
+        
+        // Fetch all insights data in parallel
+        const [
+          patternsData,
+          anomaliesData,
+          recommendationsData,
+          goalsData,
+          insightsData
+        ] = await Promise.all([
+          getSpendingPatterns(),
+          getAnomalies(),
+          getRecommendations(),
+          getSavingsGoals(),
+          getCategoryInsights()
+        ]);
+        
+        setSpendingPatterns(patternsData);
+        setAnomalies(anomaliesData);
+        setRecommendations(recommendationsData);
+        setSavingsGoals(goalsData);
+        setCategoryInsights(insightsData);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching insights data:', err);
+        setError('Failed to load insights data');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchInsightsData();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -50,13 +99,23 @@ export default function Insights() {
         </div>
       </div>
 
-      {selectedTab === 'overview' && (
+      {loading ? (
+        <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
+          <p className="text-gray-500">Loading insights data...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white rounded-lg shadow p-6 flex items-center justify-center h-64">
+          <p className="text-red-500">{error}</p>
+        </div>
+      ) : selectedTab === 'overview' && (
         <div className="space-y-6">
           {/* Recommendations */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Recommendations</h2>
             <div className="space-y-4">
-              {mockRecommendations.map(recommendation => (
+              {recommendations.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No recommendations available</p>
+              ) : recommendations.map(recommendation => (
                 <div
                   key={recommendation.id}
                   className="flex items-start p-4 border rounded-lg hover:bg-gray-50"
@@ -90,7 +149,9 @@ export default function Insights() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Recent Anomalies</h2>
             <div className="space-y-4">
-              {mockAnomalies.map(anomaly => (
+              {anomalies.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No spending anomalies detected</p>
+              ) : anomalies.map(anomaly => (
                 <div key={anomaly.id} className="flex items-start p-4 border rounded-lg hover:bg-gray-50">
                   <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                     <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,8 +176,10 @@ export default function Insights() {
           {/* Category Insights */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Category Insights</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mockCategoryInsights.map((insight, index) => (
+            <div className="space-y-4">
+              {categoryInsights.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No category insights available</p>
+              ) : categoryInsights.map((insight, index) => (
                 <div key={index} className="p-4 border rounded-lg">
                   <h3 className="font-medium text-lg">{insight.category}</h3>
                   <p className="text-gray-600 mt-1">
@@ -156,7 +219,9 @@ export default function Insights() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-4">Recurring Expenses</h2>
             <div className="space-y-4">
-              {mockSpendingPatterns.map(pattern => (
+              {spendingPatterns.length === 0 ? (
+                <p className="text-gray-500 text-center py-4">No recurring expenses detected</p>
+              ) : spendingPatterns.map(pattern => (
                 <div key={pattern.id} className="p-4 border rounded-lg">
                   <div className="flex justify-between items-start">
                     <div>
@@ -197,7 +262,9 @@ export default function Insights() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockSavingsGoals.map(goal => {
+              {savingsGoals.length === 0 ? (
+                <p className="text-gray-500 text-center py-4 col-span-2">No savings goals available</p>
+              ) : savingsGoals.map((goal) => {
                 const progress = (goal.current / goal.target) * 100;
                 return (
                   <div key={goal.id} className="p-4 border rounded-lg">

@@ -20,9 +20,8 @@ export async function GET(
     // Connect to the database
     await dbConnect();
 
-    // Get the user session and verify authentication
-    const session = await getServerSession(authOptions);
-    const user = getUserFromSession(session);
+    // Get the user session and verify authentication - FIXED: properly await the async function
+    const user = await getUserFromSession();
 
     if (!user) {
       return NextResponse.json(
@@ -41,13 +40,9 @@ export async function GET(
       );
     }
 
-    // Find the budget by ID and user ID
-    const budget = await Budget.findOne({
-      _id: id,
-      userId: user.id,
-    });
+    // Get the budget by ID and user ID
+    const budget = await Budget.findOne({ _id: id, userId: user.id });
 
-    // If budget not found or doesn't belong to the user
     if (!budget) {
       return NextResponse.json(
         { error: 'Budget not found' },
@@ -90,9 +85,8 @@ export async function PUT(
     // Connect to the database
     await dbConnect();
 
-    // Get the user session and verify authentication
-    const session = await getServerSession(authOptions);
-    const user = getUserFromSession(session);
+    // Get the user session and verify authentication - FIXED: properly await the async function
+    const user = await getUserFromSession();
 
     if (!user) {
       return NextResponse.json(
@@ -114,13 +108,9 @@ export async function PUT(
     // Parse the request body
     const body = await req.json();
 
-    // Find the budget by ID and user ID
-    const budget = await Budget.findOne({
-      _id: id,
-      userId: user.id,
-    });
+    // Get the budget by ID and user ID
+    const budget = await Budget.findOne({ _id: id, userId: user.id });
 
-    // If budget not found or doesn't belong to the user
     if (!budget) {
       return NextResponse.json(
         { error: 'Budget not found' },
@@ -128,13 +118,19 @@ export async function PUT(
       );
     }
 
-    // Update the budget with the new data
-    // Note: We don't allow changing the userId
+    // Update the budget
     const updatedBudget = await Budget.findByIdAndUpdate(
       id,
-      { ...body, userId: user.id },
+      { ...body, userId: user.id }, // Ensure userId remains the same
       { new: true, runValidators: true }
     );
+
+    if (!updatedBudget) {
+      return NextResponse.json(
+        { error: 'Failed to update budget' },
+        { status: 500 }
+      );
+    }
 
     // Format the response
     const formattedBudget = {
@@ -171,7 +167,7 @@ export async function PUT(
     }
     
     return NextResponse.json(
-      { error: 'Failed to update budget' },
+      { error: error.message || 'Failed to update budget' },
       { status: 500 }
     );
   }
@@ -186,9 +182,8 @@ export async function DELETE(
     // Connect to the database
     await dbConnect();
 
-    // Get the user session and verify authentication
-    const session = await getServerSession(authOptions);
-    const user = getUserFromSession(session);
+    // Get the user session and verify authentication - FIXED: properly await the async function
+    const user = await getUserFromSession();
 
     if (!user) {
       return NextResponse.json(
@@ -207,13 +202,9 @@ export async function DELETE(
       );
     }
 
-    // Find the budget by ID and user ID
-    const budget = await Budget.findOne({
-      _id: id,
-      userId: user.id,
-    });
+    // Get the budget by ID and user ID
+    const budget = await Budget.findOne({ _id: id, userId: user.id });
 
-    // If budget not found or doesn't belong to the user
     if (!budget) {
       return NextResponse.json(
         { error: 'Budget not found' },

@@ -1,7 +1,5 @@
-import { TransactionType } from '@/models/Transaction';
+import { TransactionType } from '@/types/commonTypes';
 import { BudgetCategory } from '@/types/budget';
-import { demoTransactionService } from './demoService';
-import Cookies from 'js-cookie';
 
 export interface TransactionData {
   id?: string;
@@ -38,84 +36,51 @@ export async function getTransactions(filters?: {
   limit?: number;
   skip?: number;
 }): Promise<TransactionResponse> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    // Get all transactions from demo service
-    const transactions = await demoTransactionService.getTransactions();
-    
-    // Apply filters if provided
-    let filteredTransactions = [...transactions];
+  try {
+    // Build query string for filters
+    const queryParams = new URLSearchParams();
     
     if (filters) {
       if (filters.accountId) {
-        filteredTransactions = filteredTransactions.filter(t => t.accountId === filters.accountId);
+        queryParams.append('accountId', filters.accountId);
+      }
+      if (filters.budgetId) {
+        queryParams.append('budgetId', filters.budgetId);
       }
       if (filters.category) {
-        filteredTransactions = filteredTransactions.filter(t => t.category === filters.category);
+        queryParams.append('category', filters.category);
       }
       if (filters.type) {
-        filteredTransactions = filteredTransactions.filter(t => t.type === filters.type);
+        queryParams.append('type', filters.type);
       }
       if (filters.startDate) {
-        filteredTransactions = filteredTransactions.filter(t => new Date(t.date) >= filters.startDate!);
+        queryParams.append('startDate', filters.startDate.toISOString());
       }
       if (filters.endDate) {
-        filteredTransactions = filteredTransactions.filter(t => new Date(t.date) <= filters.endDate!);
+        queryParams.append('endDate', filters.endDate.toISOString());
+      }
+      if (filters.limit) {
+        queryParams.append('limit', filters.limit.toString());
+      }
+      if (filters.skip) {
+        queryParams.append('skip', filters.skip.toString());
       }
     }
     
-    // Apply pagination
-    const limit = filters?.limit || 20;
-    const skip = filters?.skip || 0;
-    const paginatedTransactions = filteredTransactions.slice(skip, skip + limit);
+    // Make API request to get transactions
+    const response = await fetch(`/api/transactions?${queryParams.toString()}`);
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch transactions');
+    }
+    
+    const data = await response.json();
     
     return {
-      transactions: paginatedTransactions.map(t => {
-        // Use type assertion to resolve the Date type issue
-        const convertedTransaction = {
-          ...t,
-          date: new Date(t.date)
-        };
-        return convertedTransaction as unknown as TransactionData;
-      }),
-      pagination: {
-        total: filteredTransactions.length,
-        limit,
-        skip,
-        hasMore: skip + limit < filteredTransactions.length
-      }
+      transactions: data.transactions,
+      pagination: data.pagination
     };
-  }
-  
-  try {
-    // Build query parameters
-    const queryParams = new URLSearchParams();
-    if (filters?.accountId) queryParams.append('accountId', filters.accountId);
-    if (filters?.budgetId) queryParams.append('budgetId', filters.budgetId);
-    if (filters?.category) queryParams.append('category', filters.category);
-    if (filters?.type) queryParams.append('type', filters.type);
-    if (filters?.startDate) queryParams.append('startDate', filters.startDate.toISOString());
-    if (filters?.endDate) queryParams.append('endDate', filters.endDate.toISOString());
-    if (filters?.limit) queryParams.append('limit', String(filters.limit));
-    if (filters?.skip) queryParams.append('skip', String(filters.skip));
-    
-    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    
-    // Make API request
-    const response = await fetch(`/api/transactions${queryString}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch transactions');
-    }
-
-    return await response.json();
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching transactions:', error);
     throw error;
   }
@@ -123,63 +88,34 @@ export async function getTransactions(filters?: {
 
 // Get transaction by ID
 export async function getTransactionById(id: string): Promise<TransactionData> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    const transaction = await demoTransactionService.getTransactionById(id);
-    if (!transaction) {
-      throw new Error(`Transaction with ID ${id} not found`);
+  try {
+    // Make API request to get transaction by ID
+    const response = await fetch(`/api/transactions/${id}`);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch transaction with ID: ${id}`);
     }
+    
+    const data = await response.json();
+    
     // Convert string date to Date object for TransactionData compatibility
     // Use type assertion to resolve the Date type issue
     const convertedTransaction = {
-      ...transaction,
-      date: new Date(transaction.date)
+      ...data,
+      date: new Date(data.date)
     };
+    
     return convertedTransaction as unknown as TransactionData;
-  }
-  
-  try {
-    const response = await fetch(`/api/transactions/${id}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch transaction');
-    }
-
-    return await response.json();
-  } catch (error: any) {
-    console.error(`Error fetching transaction ${id}:`, error);
+  } catch (error) {
+    console.error(`Error fetching transaction with ID ${id}:`, error);
     throw error;
   }
 }
 
 // Create a new transaction
 export async function createTransaction(transactionData: TransactionData): Promise<TransactionData> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    // Add userId for demo service
-    const transactionWithUserId = {
-      ...transactionData,
-      userId: 'demo-user',
-      // Convert Date to string if it's a Date object
-      date: transactionData.date instanceof Date ? transactionData.date.toISOString() : transactionData.date
-    };
-    const result = await demoTransactionService.createTransaction(transactionWithUserId as any);
-    // Convert string date back to Date object for TransactionData compatibility
-    // Use type assertion to resolve the Date type issue
-    const convertedTransaction = {
-      ...result,
-      date: new Date(result.date)
-    };
-    return convertedTransaction as unknown as TransactionData;
-  }
-  
   try {
+    // Make API request to create transaction
     const response = await fetch('/api/transactions', {
       method: 'POST',
       headers: {
@@ -187,17 +123,24 @@ export async function createTransaction(transactionData: TransactionData): Promi
       },
       body: JSON.stringify({
         ...transactionData,
-        date: transactionData.date instanceof Date ? transactionData.date.toISOString() : transactionData.date,
+        date: transactionData.date.toISOString(),
+        // Ensure type is one of the valid enum values
+        type: transactionData.type === 'income' ? 'income' : 
+              transactionData.type === 'expense' ? 'expense' : 
+              transactionData.type === 'transfer' ? 'transfer' : 'expense',
+        // Ensure amount is a number
+        amount: typeof transactionData.amount === 'string' ? 
+                parseFloat(transactionData.amount) : transactionData.amount
       }),
     });
-
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to create transaction');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to create transaction');
     }
-
+    
     return await response.json();
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating transaction:', error);
     throw error;
   }
@@ -205,26 +148,6 @@ export async function createTransaction(transactionData: TransactionData): Promi
 
 // Update an existing transaction
 export async function updateTransaction(id: string, transactionData: Partial<TransactionData>): Promise<TransactionData> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    // Convert Date to string if it's a Date object
-    const processedData = {
-      ...transactionData,
-      date: transactionData.date instanceof Date ? transactionData.date.toISOString() : transactionData.date
-    };
-    const result = await demoTransactionService.updateTransaction(id, processedData as any);
-    // Handle null case and convert string date back to Date object for TransactionData compatibility
-    if (!result) {
-      throw new Error(`Transaction with ID ${id} not found`);
-    }
-    // Use type assertion to resolve the Date type issue
-    const convertedTransaction = {
-      ...result,
-      date: new Date(result.date)
-    };
-    return convertedTransaction as unknown as TransactionData;
-  }
-  
   try {
     // Format date if it exists
     const formattedData = { ...transactionData };
@@ -232,7 +155,8 @@ export async function updateTransaction(id: string, transactionData: Partial<Tra
       // Use type assertion to handle date conversion
       (formattedData as any).date = formattedData.date.toISOString();
     }
-
+    
+    // Make API request to update transaction
     const response = await fetch(`/api/transactions/${id}`, {
       method: 'PUT',
       headers: {
@@ -240,14 +164,13 @@ export async function updateTransaction(id: string, transactionData: Partial<Tra
       },
       body: JSON.stringify(formattedData),
     });
-
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to update transaction');
+      throw new Error('Failed to update transaction');
     }
-
+    
     return await response.json();
-  } catch (error: any) {
+  } catch (error) {
     console.error(`Error updating transaction ${id}:`, error);
     throw error;
   }
@@ -255,13 +178,8 @@ export async function updateTransaction(id: string, transactionData: Partial<Tra
 
 // Delete a transaction
 export async function deleteTransaction(id: string): Promise<void> {
-  // Check if in demo mode
-  if (Cookies.get('demoMode') === 'true') {
-    await demoTransactionService.deleteTransaction(id);
-    return;
-  }
-  
   try {
+    // Make API request to delete transaction
     const response = await fetch(`/api/transactions/${id}`, {
       method: 'DELETE',
       headers: {

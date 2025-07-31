@@ -101,8 +101,8 @@ export default function AccountsPage() {
         <h1 className="text-3xl font-bold mb-6">Financial Accounts</h1>
         
         {/* Error and Success Messages */}
-        {error && <ErrorMessage message={error} onClose={() => setError(null)} />}
-        {success && <SuccessMessage message={success} onClose={() => setSuccess(null)} />}
+        {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+        {success && <SuccessMessage message={success} onDismiss={() => setSuccess(null)} />}
         
         {/* Account Filters */}
         <div className="mb-6">
@@ -154,14 +154,14 @@ export default function AccountsPage() {
         )}
         
         {/* Account Form Modal */}
-        {showModal && (
-          <Modal
-            title={editingAccount ? 'Edit Account' : 'Add New Account'}
-            onClose={() => {
-              setShowModal(false);
-              setEditingAccount(null);
-            }}
-          >
+        <Modal
+          isOpen={showModal}
+          title={editingAccount ? 'Edit Account' : 'Add New Account'}
+          onClose={() => {
+            setShowModal(false);
+            setEditingAccount(null);
+          }}
+        >
             <AccountForm 
               account={editingAccount}
               onSave={handleAccountSaved}
@@ -170,8 +170,7 @@ export default function AccountsPage() {
                 setEditingAccount(null);
               }}
             />
-          </Modal>
-        )}
+        </Modal>
       </div>
     </ProtectedRoute>
   );

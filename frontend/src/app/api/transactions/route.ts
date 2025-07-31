@@ -5,6 +5,7 @@ import Account from '@/models/Account';
 import Budget from '@/models/Budget';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { TransactionType } from '@/types/commonTypes';
 
 // GET handler to fetch all transactions for the current user
 export async function GET(req: NextRequest) {
@@ -56,8 +57,16 @@ export async function GET(req: NextRequest) {
     // Get total count for pagination
     const total = await Transaction.countDocuments(query);
 
+    // Map MongoDB _id to id for frontend compatibility
+    const mappedTransactions = transactions.map(transaction => {
+      const transactionObj = transaction.toObject();
+      transactionObj.id = transactionObj._id.toString();
+      delete transactionObj._id;
+      return transactionObj;
+    });
+
     return NextResponse.json({
-      transactions,
+      transactions: mappedTransactions,
       pagination: {
         total,
         limit,
@@ -126,20 +135,25 @@ export async function POST(req: NextRequest) {
       }
 
       // Update budget spent amount if it's an expense
-      if (body.type === 'expense') {
+      if (body.type === 'expense' || body.type === TransactionType.EXPENSE) {
+        console.log('Updating budget spent amount:', body.budgetId, 'Amount:', Math.abs(body.amount));
         await Budget.findByIdAndUpdate(
           body.budgetId,
-          { $inc: { spent: body.amount } }
+          { $inc: { spent: Math.abs(body.amount) } }
         );
       }
     }
 
     // Update account balance based on transaction type
     let balanceChange = 0;
-    if (body.type === 'income') {
-      balanceChange = body.amount;
-    } else if (body.type === 'expense') {
-      balanceChange = -body.amount;
+    console.log('Transaction type:', body.type, 'Amount:', body.amount);
+    
+    // Handle transaction types
+    if (body.type === 'income' || body.type === TransactionType.INCOME) {
+      balanceChange = Math.abs(body.amount);
+    } else if (body.type === 'expense' || body.type === TransactionType.EXPENSE) {
+      // For expenses, we store positive amounts but decrease the balance
+      balanceChange = -Math.abs(body.amount);
     }
 
     if (balanceChange !== 0) {
@@ -155,7 +169,12 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
     });
 
-    return NextResponse.json(transaction, { status: 201 });
+    // Map MongoDB _id to id for frontend compatibility
+    const transactionObj = transaction.toObject();
+    transactionObj.id = transactionObj._id.toString();
+    delete transactionObj._id;
+
+    return NextResponse.json(transactionObj, { status: 201 });
   } catch (error: any) {
     console.error('Error creating transaction:', error);
     return NextResponse.json(
