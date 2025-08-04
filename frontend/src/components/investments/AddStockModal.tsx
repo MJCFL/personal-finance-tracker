@@ -264,10 +264,10 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
               </div>
             </div>
             
-            <div className="bg-gray-50 p-4 rounded-md">
+            <div className="bg-white p-4 rounded-md border border-gray-200">
               <div className="flex justify-between items-center">
                 <div className="text-sm font-medium text-gray-700">Total Value:</div>
-                <div className="text-lg font-semibold">
+                <div className="text-lg font-semibold text-gray-900">
                   ${calculateTotalValue().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
               </div>

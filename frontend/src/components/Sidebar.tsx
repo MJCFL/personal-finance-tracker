@@ -160,7 +160,10 @@ export default function Sidebar() {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="btn-secondary w-full flex items-center justify-center gap-3 py-3 text-base font-medium mb-3"
           >
-            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+            {/* Use a client-side only approach to avoid hydration mismatch */}
+            <span suppressHydrationWarning>
+              {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+            </span>
           </button>
           
           {/* Help Button */}

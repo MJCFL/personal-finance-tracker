@@ -22,10 +22,21 @@ export async function getInvestmentAccounts(): Promise<InvestmentAccountData[]> 
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch investment accounts');
+      // Safely handle potential non-JSON responses
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to fetch investment accounts: ${response.status}`);
+      } else {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
     }
 
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Invalid response format from server');
+    }
+    
     return await response.json();
   } catch (error: any) {
     console.error('Error fetching investment accounts:', error);
@@ -44,10 +55,21 @@ export async function getInvestmentAccountById(id: string): Promise<InvestmentAc
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch investment account');
+      // Safely handle potential non-JSON responses
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to fetch investment account: ${response.status}`);
+      } else {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
     }
 
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error('Invalid response format from server');
+    }
+    
     return await response.json();
   } catch (error: any) {
     console.error('Error fetching investment account:', error);
