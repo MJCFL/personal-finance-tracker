@@ -8,6 +8,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon, PresentationChartLineIcon, CreditCardIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import HelpButton from './onboarding/HelpButton';
 import { useFinancial } from '@/contexts/FinancialContext';
+import ThemeToggle from './ThemeToggle';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -156,15 +157,7 @@ export default function Sidebar() {
           </div>
           
           {/* Theme Toggle */}
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="btn-secondary w-full flex items-center justify-center gap-3 py-3 text-base font-medium mb-3"
-          >
-            {/* Use a client-side only approach to avoid hydration mismatch */}
-            <span suppressHydrationWarning>
-              {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
-            </span>
-          </button>
+          <ThemeToggle />
           
           {/* Help Button */}
           <HelpButton />
