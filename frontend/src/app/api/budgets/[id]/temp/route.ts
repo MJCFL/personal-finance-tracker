@@ -21,8 +21,7 @@ export async function GET(
     await dbConnect();
 
     // Get the user session and verify authentication
-    const session = await getServerSession(authOptions);
-    const user = getUserFromSession(session);
+    const user = await getUserFromSession();
 
     if (!user) {
       return NextResponse.json(
@@ -91,8 +90,7 @@ export async function PUT(
     await dbConnect();
 
     // Get the user session and verify authentication
-    const session = await getServerSession(authOptions);
-    const user = getUserFromSession(session);
+    const user = await getUserFromSession();
 
     if (!user) {
       return NextResponse.json(
@@ -206,6 +204,8 @@ export async function DELETE(
       );
     }
 
+    console.log(`Attempting to delete budget with ID: ${id} for user: ${user.id}`);
+
     // Find the budget by ID and user ID
     const budget = await Budget.findOne({
       _id: id,
@@ -214,14 +214,18 @@ export async function DELETE(
 
     // If budget not found or doesn't belong to the user
     if (!budget) {
+      console.log(`Budget not found with ID: ${id} for user: ${user.id}`);
       return NextResponse.json(
         { error: 'Budget not found' },
         { status: 404 }
       );
     }
 
+    console.log(`Found budget to delete: ${budget._id}`);
+
     // Delete the budget
     await Budget.findByIdAndDelete(id);
+    console.log(`Budget deleted successfully: ${id}`);
 
     return NextResponse.json(
       { message: 'Budget deleted successfully' },

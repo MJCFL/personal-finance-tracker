@@ -1,5 +1,6 @@
 import { Budget, BudgetFormData, BudgetCategory } from '@/types/budget';
 import Cookies from 'js-cookie';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 // Demo budget data
 const demoBudgets: Budget[] = [
@@ -285,19 +286,32 @@ export async function deleteBudget(id: string): Promise<{ message: string }> {
     return demoBudgetService.deleteBudget(id);
   }
   
-  const response = await fetch(`/api/budgets/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    console.log(`Attempting to delete budget with ID: ${id}`);
+    
+    const response = await fetch(`/api/budgets/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to delete budget');
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Delete budget error response:', error);
+      throw new Error(error.error || 'Failed to delete budget');
+    }
+
+    const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return result;
+  } catch (error) {
+    console.error(`Error deleting budget with ID ${id}:`, error);
+    throw error;
   }
-
-  return response.json();
 }
 
 // Update the spent amount for a budget

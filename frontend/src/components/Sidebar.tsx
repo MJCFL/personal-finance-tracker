@@ -5,29 +5,55 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon, PresentationChartLineIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon, PresentationChartLineIcon, CreditCardIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
 import HelpButton from './onboarding/HelpButton';
+import { useFinancial } from '@/contexts/FinancialContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const { data: session, status } = useSession();
+  const { financialSummary, isLoading } = useFinancial();
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: HomeIcon },
     { name: 'Accounts', href: '/accounts', icon: BanknotesIcon },
     { name: 'Transactions', href: '/transactions', icon: BanknotesIcon },
     { name: 'Assets', href: '/assets', icon: ChartBarIcon },
+    { name: 'Investments', href: '/investments', icon: CurrencyDollarIcon },
+    { name: 'Debts', href: '/debts', icon: CreditCardIcon },
     { name: 'Analytics', href: '/analytics', icon: PresentationChartLineIcon },
     { name: 'Budgets', href: '/budgets', icon: WalletIcon },
     { name: 'Insights', href: '/insights', icon: WalletIcon },
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
   ];
 
+  // Format currency values
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
   const stats = [
-    { label: 'Balance', value: '$12,560.00', type: 'neutral' },
-    { label: 'Income', value: '+$2,300.00', type: 'income' },
-    { label: 'Expenses', value: '-$1,150.00', type: 'expense' }
+    { 
+      label: 'Balance', 
+      value: formatCurrency(financialSummary.totalBalance), 
+      type: 'neutral' 
+    },
+    { 
+      label: 'Income', 
+      value: '+' + formatCurrency(financialSummary.monthlyIncome), 
+      type: 'income' 
+    },
+    { 
+      label: 'Expenses', 
+      value: '-' + formatCurrency(financialSummary.monthlyExpenses), 
+      type: 'expense' 
+    }
   ];
 
   return (
@@ -39,14 +65,27 @@ export default function Sidebar() {
           
           {/* Quick Stats */}
           <div className="space-y-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="p-4 rounded-xl bg-[var(--hover)]">
-                <p className="text-sm font-medium text-[var(--text-secondary)] mb-1">{stat.label}</p>
-                <p className={`text-xl font-bold amount-${stat.type}`}>
-                  {stat.value}
-                </p>
-              </div>
-            ))}
+            {isLoading ? (
+              // Loading skeleton for stats
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-4 rounded-xl bg-[var(--hover)]">
+                    <div className="h-4 w-20 bg-gray-700/50 rounded animate-pulse mb-2"></div>
+                    <div className="h-6 w-28 bg-gray-700/50 rounded animate-pulse"></div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              // Actual stats when loaded
+              stats.map((stat) => (
+                <div key={stat.label} className="p-4 rounded-xl bg-[var(--hover)]">
+                  <p className="text-sm font-medium text-[var(--text-secondary)] mb-1">{stat.label}</p>
+                  <p className={`text-xl font-bold amount-${stat.type}`}>
+                    {stat.value}
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 

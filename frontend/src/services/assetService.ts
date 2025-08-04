@@ -1,4 +1,5 @@
 import { Asset } from '@/types/asset';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 // Fetch all assets
 export async function getAssets(): Promise<Asset[]> {
@@ -35,6 +36,10 @@ export async function createAsset(assetData: Omit<Asset, 'id' | 'dateAdded' | 'l
     }
     
     const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
     return result.data;
   } catch (error) {
     console.error('Error creating asset:', error);
@@ -59,6 +64,10 @@ export async function updateAsset(id: string, assetData: Partial<Asset>): Promis
     }
     
     const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
     return result.data;
   } catch (error) {
     console.error('Error updating asset:', error);
@@ -77,6 +86,9 @@ export async function deleteAsset(id: string): Promise<void> {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete asset');
     }
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
   } catch (error) {
     console.error('Error deleting asset:', error);
     throw error;

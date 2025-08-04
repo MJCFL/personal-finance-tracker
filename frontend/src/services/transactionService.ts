@@ -1,5 +1,6 @@
 import { TransactionType } from '@/types/commonTypes';
 import { BudgetCategory } from '@/types/budget';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 export interface TransactionData {
   id?: string;
@@ -139,7 +140,12 @@ export async function createTransaction(transactionData: TransactionData): Promi
       throw new Error(errorData.error || 'Failed to create transaction');
     }
     
-    return await response.json();
+    const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return result;
   } catch (error) {
     console.error('Error creating transaction:', error);
     throw error;
@@ -169,7 +175,12 @@ export async function updateTransaction(id: string, transactionData: Partial<Tra
       throw new Error('Failed to update transaction');
     }
     
-    return await response.json();
+    const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return result;
   } catch (error) {
     console.error(`Error updating transaction ${id}:`, error);
     throw error;
@@ -191,6 +202,9 @@ export async function deleteTransaction(id: string): Promise<void> {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete transaction');
     }
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
   } catch (error: any) {
     console.error(`Error deleting transaction ${id}:`, error);
     throw error;

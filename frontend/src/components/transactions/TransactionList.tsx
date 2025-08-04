@@ -165,7 +165,7 @@ export default function TransactionList({
                       {transaction.description}
                     </h3>
                     <p className="text-xs text-gray-400">
-                      {new Date(transaction.date).toLocaleDateString()}
+                      {new Date(transaction.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="text-right shrink-0">

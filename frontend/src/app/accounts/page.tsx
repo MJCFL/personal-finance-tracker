@@ -110,7 +110,7 @@ export default function AccountsPage() {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleFilterChange('all')}
-              className={`px-4 py-2 rounded ${activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+              className={`px-4 py-2 rounded ${activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
             >
               All
             </button>
@@ -118,7 +118,7 @@ export default function AccountsPage() {
               <button
                 key={type}
                 onClick={() => handleFilterChange(type)}
-                className={`px-4 py-2 rounded ${activeFilter === type ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+                className={`px-4 py-2 rounded ${activeFilter === type ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800'}`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1).replace('_', ' ')}
               </button>

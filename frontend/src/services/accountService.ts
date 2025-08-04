@@ -1,4 +1,5 @@
 import { AccountType } from '@/types/account';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 export interface AccountData {
   id?: string;
@@ -9,6 +10,7 @@ export interface AccountData {
   accountNumber?: string;
   isActive: boolean;
   notes?: string;
+  interestRate?: number;
 }
 
 // Get all accounts
@@ -82,7 +84,12 @@ export async function createAccount(accountData: AccountData): Promise<AccountDa
       throw new Error(error.error || 'Failed to create account');
     }
 
-    return await response.json();
+    const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return result;
   } catch (error: any) {
     console.error('Error creating account:', error);
     throw error;
@@ -105,7 +112,12 @@ export async function updateAccount(id: string, accountData: Partial<AccountData
       throw new Error(error.error || 'Failed to update account');
     }
 
-    return await response.json();
+    const result = await response.json();
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return result;
   } catch (error: any) {
     console.error(`Error updating account ${id}:`, error);
     throw error;
@@ -126,6 +138,9 @@ export async function deleteAccount(id: string): Promise<void> {
       const error = await response.json();
       throw new Error(error.error || 'Failed to delete account');
     }
+    
+    // Emit event to notify that financial data has changed
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
   } catch (error: any) {
     console.error(`Error deleting account ${id}:`, error);
     throw error;

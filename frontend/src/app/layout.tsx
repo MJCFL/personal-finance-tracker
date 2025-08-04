@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/providers/ThemeProvider';
 import SessionProvider from '@/components/auth/SessionProvider';
 import Script from 'next/script';
 import ResponsiveLayout from '@/components/layout/ResponsiveLayout';
+import { FinancialProvider } from '@/contexts/FinancialContext';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -27,9 +28,11 @@ export default function RootLayout({
         />
         <SessionProvider>
           <ThemeProvider>
-            <ResponsiveLayout>
-              {children}
-            </ResponsiveLayout>
+            <FinancialProvider>
+              <ResponsiveLayout>
+                {children}
+              </ResponsiveLayout>
+            </FinancialProvider>
           </ThemeProvider>
         </SessionProvider>
       </body>

@@ -201,28 +201,85 @@ function TransactionsPageContent() {
             <div className="bg-gray-900 rounded-3xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-medium">Quick Filters</h2>
-                <button className="text-sm text-gray-400 hover:text-white">
+                <button 
+                  className="text-sm text-gray-400 hover:text-white"
+                  onClick={() => {
+                    setStartDate(null);
+                    setEndDate(null);
+                    setSelectedCategory('all');
+                    setSelectedBank('all');
+                    setSearchTerm('');
+                  }}
+                >
                   Clear All
                 </button>
               </div>
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  <button className="px-3 py-1.5 bg-blue-500/20 text-blue-400 text-sm rounded-lg hover:bg-blue-500/30 transition-colors">
+                  <button 
+                    className={`px-3 py-1.5 ${startDate && startDate.getMonth() === new Date().getMonth() && startDate.getFullYear() === new Date().getFullYear() ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-gray-700 transition-colors`}
+                    onClick={() => {
+                      // Set date range to this month
+                      const now = new Date();
+                      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                      setStartDate(firstDayOfMonth);
+                      setEndDate(lastDayOfMonth);
+                    }}
+                  >
                     This Month
                   </button>
-                  <button className="px-3 py-1.5 bg-gray-800 text-gray-400 text-sm rounded-lg hover:bg-gray-700 transition-colors">
+                  <button 
+                    className={`px-3 py-1.5 ${startDate && startDate.getMonth() === (new Date().getMonth() - 1 + 12) % 12 ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-gray-700 transition-colors`}
+                    onClick={() => {
+                      // Set date range to last month
+                      const now = new Date();
+                      const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                      const lastDayOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+                      setStartDate(firstDayOfLastMonth);
+                      setEndDate(lastDayOfLastMonth);
+                    }}
+                  >
                     Last Month
                   </button>
-                  <button className="px-3 py-1.5 bg-gray-800 text-gray-400 text-sm rounded-lg hover:bg-gray-700 transition-colors">
+                  <button 
+                    className={`px-3 py-1.5 ${startDate && startDate.getMonth() === (new Date().getMonth() - 3 + 12) % 12 ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-gray-700 transition-colors`}
+                    onClick={() => {
+                      // Set date range to last 3 months
+                      const now = new Date();
+                      const firstDayOfThreeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+                      const lastDayOfCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                      setStartDate(firstDayOfThreeMonthsAgo);
+                      setEndDate(lastDayOfCurrentMonth);
+                    }}
+                  >
                     Last 3 Months
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <button className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-sm rounded-lg hover:bg-emerald-500/30 transition-colors">
+                  <button 
+                    className={`px-3 py-1.5 ${transactions.filter(t => t.type === 'income').length > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-emerald-500/30 transition-colors`}
+                    onClick={() => {
+                      // Filter to show only income transactions
+                      setTransactions(prev => prev.filter(t => t.type === 'income'));
+                    }}
+                  >
                     Income
                   </button>
-                  <button className="px-3 py-1.5 bg-rose-500/20 text-rose-400 text-sm rounded-lg hover:bg-rose-500/30 transition-colors">
+                  <button 
+                    className={`px-3 py-1.5 ${transactions.filter(t => t.type === 'expense').length > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-rose-500/30 transition-colors`}
+                    onClick={() => {
+                      // Filter to show only expense transactions
+                      setTransactions(prev => prev.filter(t => t.type === 'expense'));
+                    }}
+                  >
                     Expenses
+                  </button>
+                  <button 
+                    className="px-3 py-1.5 bg-gray-800 text-gray-400 text-sm rounded-lg hover:bg-gray-700 transition-colors"
+                    onClick={handleTransactionChange} // Refresh to show all transactions
+                  >
+                    All
                   </button>
                 </div>
                 <div className="relative">

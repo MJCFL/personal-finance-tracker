@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { getAssets } from '@/services/assetService';
-import { getTransactions } from '@/services/transactionService';
-import { getAccounts } from '@/services/accountService';
+import { getFinancialSummary } from '@/services/insightsService';
 
 interface NetWorthData {
   date: string;
@@ -21,24 +19,11 @@ export default function NetWorthCard() {
       try {
         setLoading(true);
         
-        // Fetch assets, accounts, and transactions to calculate net worth
-        const assets = await getAssets();
-        const accounts = await getAccounts();
-        const transactionsResponse = await getTransactions();
-        const transactions = transactionsResponse.transactions;
+        // Get financial summary which includes net worth (with investments)
+        const financialSummary = await getFinancialSummary();
         
-        // Calculate current net worth from assets (if any)
-        const totalAssetValue = assets && assets.length > 0 ? assets.reduce((total, asset) => {
-          return total + (asset.currentValue || 0);
-        }, 0) : 0;
-        
-        // Calculate total account balance
-        const totalAccountBalance = accounts && accounts.length > 0 ? accounts.reduce((total, account) => {
-          return total + (account.balance || 0);
-        }, 0) : 0;
-        
-        // Total net worth is assets plus account balances
-        const totalNetWorth = totalAssetValue + totalAccountBalance;
+        // Use the net worth value that includes investments
+        const totalNetWorth = financialSummary.netWorth;
         
         // Create monthly net worth history using transaction data
         // Group transactions by month

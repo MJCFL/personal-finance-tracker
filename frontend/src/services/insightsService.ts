@@ -3,6 +3,14 @@ import { TransactionType } from '@/types/commonTypes';
 import { getTransactions } from './transactionService';
 import { getAssets } from './assetService';
 import { getAccounts } from './accountService';
+import { AccountType } from '@/types/account';
+
+export interface FinancialSummary {
+  totalBalance: number; // Cash in checking accounts only
+  netWorth: number; // Total assets including investments, minus liabilities
+  monthlyIncome: number;
+  monthlyExpenses: number;
+}
 
 export interface SpendingPattern {
   id: string;
@@ -517,5 +525,101 @@ export async function getCategoryInsights(): Promise<CategoryInsight[]> {
   } catch (error) {
     console.error('Error fetching category insights:', error);
     return [];
+  }
+}
+
+// Get financial summary for sidebar/dashboard
+export async function getFinancialSummary(): Promise<FinancialSummary> {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return {
+        totalBalance: 0,
+        netWorth: 0,
+        monthlyIncome: 0,
+        monthlyExpenses: 0
+      };
+    }
+
+    // Get all accounts to calculate total balance and net worth
+    const accounts = await getAccounts();
+    
+    // Calculate checking account balance (cash only)
+    const totalBalance = accounts.reduce((total, account) => {
+      // Only include checking accounts in the sidebar balance
+      if (account.type === AccountType.CHECKING) {
+        return total + (account.balance || 0);
+      }
+      return total;
+    }, 0);
+    
+    // Calculate net worth (assets minus liabilities)
+    let netWorth = accounts.reduce((total, account) => {
+      if (account.type === AccountType.CREDIT_CARD || account.type === AccountType.LOAN || account.type === AccountType.MORTGAGE) {
+        return total - (account.balance || 0); // Subtract liabilities
+      }
+      return total + (account.balance || 0); // Add assets
+    }, 0);
+    
+    // Get investment accounts and add their value to net worth
+    try {
+      const { getInvestmentAccounts } = await import('@/services/investmentService');
+      const investmentAccounts = await getInvestmentAccounts();
+      
+      // Add investment account values to net worth
+      const investmentValue = investmentAccounts.reduce((total, account) => {
+        // Calculate stocks value
+        const stocksValue = account.stocks.reduce((stockTotal, stock) => {
+          return stockTotal + (stock.shares * stock.currentPrice);
+        }, 0);
+        
+        // Add stocks value and cash
+        return total + stocksValue + (account.cash || 0);
+      }, 0);
+      
+      netWorth += investmentValue;
+    } catch (error) {
+      console.error('Error fetching investment accounts for net worth calculation:', error);
+      // Continue without investment accounts if there's an error
+    }
+    
+    // Get transactions from the current month for income/expenses
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const { transactions } = await getTransactions({
+      startDate: firstDayOfMonth,
+      endDate: lastDayOfMonth
+    });
+    
+    // Calculate monthly income and expenses
+    let monthlyIncome = 0;
+    let monthlyExpenses = 0;
+    
+    if (transactions && transactions.length > 0) {
+      transactions.forEach(transaction => {
+        if (transaction.type === 'income') {
+          monthlyIncome += transaction.amount;
+        } else if (transaction.type === 'expense') {
+          monthlyExpenses += Math.abs(transaction.amount);
+        }
+      });
+    }
+    
+    return {
+      totalBalance,
+      netWorth,
+      monthlyIncome,
+      monthlyExpenses
+    };
+  } catch (error) {
+    console.error('Error getting financial summary:', error);
+    return {
+      totalBalance: 0,
+      netWorth: 0,
+      monthlyIncome: 0,
+      monthlyExpenses: 0
+    };
   }
 }

@@ -106,7 +106,7 @@ export default function FinancialInsights() {
     if (cashPercentage < 10 && totalValue > 1000) {
       insights.push({
         title: 'Low Cash Reserve',
-        description: `Only ${cashPercentage.toFixed(1)}% of your portfolio is in cash. Consider maintaining a larger emergency fund.`,
+        description: `Only ${cashPercentage.toFixed(1)}% of your portfolio is in cash. Consider maintaining more in your savings and checking accounts.`,
         type: 'warning',
         icon: '💰',
       });
