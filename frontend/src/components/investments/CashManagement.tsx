@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { updateCashBalance, recordCashTransaction } from '@/services/investmentService';
+import { handleStringNumberInputChange } from '@/utils/inputHelpers';
 import { TransactionType } from '@/types/investment';
 
 interface CashManagementProps {
@@ -127,7 +128,7 @@ const CashManagement: React.FC<CashManagementProps> = ({
               type="number"
               id="amount"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => handleStringNumberInputChange(e.target.value, setAmount)}
               min="0.01"
               step="0.01"
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"

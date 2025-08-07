@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { IStock } from '@/types/investment';
+import { IStock } from '@/models/InvestmentAccount';
 import { sellStock } from '@/services/investmentService';
+import { handleStringNumberInputChange } from '@/utils/inputHelpers';
 import Modal from '../ui/Modal';
 
 interface SellStockModalProps {
@@ -101,7 +102,7 @@ const SellStockModal: React.FC<SellStockModalProps> = ({
               type="number"
               id="shares"
               value={shares}
-              onChange={(e) => setShares(e.target.value)}
+              onChange={(e) => handleStringNumberInputChange(e.target.value, setShares)}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               placeholder="Enter number of shares"
               step="0.0001"
@@ -127,7 +128,7 @@ const SellStockModal: React.FC<SellStockModalProps> = ({
               type="number"
               id="price"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => handleStringNumberInputChange(e.target.value, setPrice)}
               className="block w-full pl-7 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               placeholder="0.00"
               step="0.01"

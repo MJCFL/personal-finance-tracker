@@ -59,7 +59,7 @@ const InvestmentPortfolio: React.FC = () => {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
-      <div className="lg:w-1/3">
+      <div className="lg:w-1/4">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Investment Accounts</h2>
           <button
@@ -92,7 +92,7 @@ const InvestmentPortfolio: React.FC = () => {
         )}
       </div>
       
-      <div className="lg:w-2/3">
+      <div className="lg:w-3/4">
         {selectedAccount ? (
           <InvestmentAccountDetails 
             account={selectedAccount} 

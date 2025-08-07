@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AccountData, createAccount, updateAccount } from '@/services/accountService';
 import { AccountType } from '@/types/account';
+import { handleNumberInputChange } from '@/utils/inputHelpers';
 
 interface AccountFormProps {
   account: AccountData | null;
@@ -9,7 +10,7 @@ interface AccountFormProps {
 }
 
 const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) => {
-  const [formData, setFormData] = useState<AccountData>({
+  const [formData, setFormData] = useState<Partial<AccountData> & { balanceInput?: string; interestRateInput?: string; minimumPaymentInput?: string; }>({
     name: account?.name || '',
     type: account?.type || AccountType.CHECKING,
     balance: account?.balance || 0,
@@ -17,7 +18,17 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
     accountNumber: account?.accountNumber || '',
     isActive: account?.isActive !== undefined ? account.isActive : true,
     notes: account?.notes || '',
+    interestRate: account?.interestRate !== undefined ? account.interestRate : 0,
+    minimumPayment: account?.minimumPayment || undefined,
+    balanceInput: account?.balance ? account.balance.toString() : '',
+    interestRateInput: account?.interestRate !== undefined ? account.interestRate.toString() : '0',
+    minimumPaymentInput: account?.minimumPayment ? account.minimumPayment.toString() : '',
   });
+  
+  // Separate state for balance input to preserve string format during typing
+  const [balanceInput, setBalanceInput] = useState<string>(
+    account?.balance ? account.balance.toString() : ''
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,7 +46,21 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
     
     // Handle number inputs
     if (type === 'number') {
-      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+      // Special handling for interestRate field
+      if (name === 'interestRate') {
+        const numValue = value === '' ? 0 : parseFloat(value);
+        setFormData(prev => ({
+          ...prev,
+          interestRate: numValue,
+          interestRateInput: value
+        }));
+        return;
+      }
+      
+      // Handle other number inputs
+      handleNumberInputChange(value, (newValue) => {
+        setFormData(prev => ({ ...prev, [name]: newValue }));
+      }, true); // Allow empty for all number fields to support leading zeros
       return;
     }
     
@@ -47,11 +72,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       newErrors.name = 'Account name is required';
     }
     
-    if (!formData.institution.trim()) {
+    if (!formData.institution?.trim()) {
       newErrors.institution = 'Institution name is required';
     }
     
@@ -72,14 +97,60 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
     }
     
     setIsSubmitting(true);
-    
+    setErrors({});
+
     try {
+      // Create account data object from form data
+      const accountData: Partial<AccountData> = {
+        name: formData.name,
+        type: formData.type,
+        balance: Number(formData.balance),
+        institution: formData.institution,
+        isActive: formData.isActive,
+      };
+
+      // Add optional fields if they have values
+      if (formData.accountNumber) accountData.accountNumber = formData.accountNumber;
+      if (formData.notes) accountData.notes = formData.notes;
+      
+      // Handle interest rate specifically for liability accounts
+      if (formData.type === AccountType.CREDIT_CARD || 
+          formData.type === AccountType.LOAN || 
+          formData.type === AccountType.MORTGAGE) {
+        // CRITICAL FIX: Always explicitly include interestRate for liability accounts
+        // Force a number type and ensure it's not undefined, even if it's 0
+        const interestRateValue = formData.interestRate !== undefined ? Number(formData.interestRate) : 0;
+        
+        // Ensure we're sending a valid number, not NaN
+        accountData.interestRate = isNaN(interestRateValue) ? 0 : interestRateValue;
+        
+        // Log the interest rate value being set
+        console.log('Setting interest rate for liability account:', accountData.interestRate, 
+                    'from formData.interestRate:', formData.interestRate, 
+                    'type:', typeof formData.interestRate);
+      } else if (formData.interestRate !== undefined) {
+        // For non-liability accounts, only include if explicitly set
+        accountData.interestRate = Number(formData.interestRate);
+      }
+      
+      // Handle minimum payment for liability accounts
+      if (formData.type === AccountType.CREDIT_CARD || 
+          formData.type === AccountType.LOAN || 
+          formData.type === AccountType.MORTGAGE) {
+        if (formData.minimumPayment !== undefined) {
+          accountData.minimumPayment = Number(formData.minimumPayment);
+        }
+      }
+      
+      // Log the clean account data for debugging
+      console.log('Clean account data for submission:', accountData);
+      
       if (account?.id) {
         // Update existing account
-        await updateAccount(account.id, formData);
+        await updateAccount(account.id, accountData as AccountData);
       } else {
         // Create new account
-        await createAccount(formData);
+        await createAccount(accountData as AccountData);
       }
       
       onSave();
@@ -189,12 +260,30 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
             <span className="text-gray-500 sm:text-sm">$</span>
           </div>
           <input
-            type="number"
+            type="text"
             id="balance"
             name="balance"
-            value={formData.balance}
-            onChange={handleChange}
-            step="0.01"
+            value={balanceInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              
+              // Allow empty input, single decimal point, or valid numbers (including leading zeros)
+              if (value === '' || value === '.' || value === '0' || value === '0.' || !isNaN(parseFloat(value))) {
+                setBalanceInput(value);
+                
+                // Update the actual form data with the numeric value when appropriate
+                if (value === '' || value === '.') {
+                  setFormData(prev => ({ ...prev, balance: 0 }));
+                } else {
+                  const numValue = parseFloat(value);
+                  if (!isNaN(numValue)) {
+                    setFormData(prev => ({ ...prev, balance: numValue }));
+                  }
+                }
+              }
+            }}
+            pattern="[0-9]*\.?[0-9]*"
+            inputMode="decimal"
             className="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
             placeholder="0.00"
           />
@@ -218,6 +307,96 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
           Account is active
         </label>
       </div>
+      
+      {/* Interest Rate - Only for debt accounts */}
+      {(formData.type === AccountType.CREDIT_CARD || formData.type === AccountType.LOAN || formData.type === AccountType.MORTGAGE) && (
+        <div>
+          <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700">
+            Interest Rate (% APR)
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <input
+              type="text"
+              id="interestRate"
+              name="interestRate"
+              value={formData.interestRateInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                
+                // Allow empty input, single decimal point, or valid numbers (including leading zeros)
+                if (value === '' || value === '.' || value === '0' || value === '0.' || !isNaN(parseFloat(value))) {
+                  // Always convert to a number, even if it's 0
+                  let numValue;
+                  if (value === '' || value === '.') {
+                    numValue = 0;
+                  } else {
+                    numValue = parseFloat(value);
+                    // Handle NaN case
+                    if (isNaN(numValue)) numValue = 0;
+                  }
+                  
+                  setFormData(prev => ({
+                    ...prev,
+                    interestRateInput: value,
+                    interestRate: numValue
+                  }));
+                  
+                  // Log the updated interest rate for debugging
+                  console.log('Interest rate updated to:', numValue, 'from input:', value);
+                }
+              }}
+              pattern="[0-9]*\.?[0-9]*"
+              inputMode="decimal"
+              className="block w-full pr-8 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.0"
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">%</span>
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">Annual percentage rate for this debt (0% for promotional offers)</p>
+        </div>
+      )}
+      
+      {/* Minimum Payment - Only for debt accounts */}
+      {(formData.type === AccountType.CREDIT_CARD || formData.type === AccountType.LOAN || formData.type === AccountType.MORTGAGE) && (
+        <div>
+          <label htmlFor="minimumPayment" className="block text-sm font-medium text-gray-700">
+            Minimum Monthly Payment
+          </label>
+          <div className="mt-1 relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">$</span>
+            </div>
+            <input
+              type="text"
+              id="minimumPayment"
+              name="minimumPayment"
+              value={formData.minimumPaymentInput}
+              onChange={(e) => {
+                const value = e.target.value;
+                
+                // Allow empty input, single decimal point, or valid numbers (including leading zeros)
+                if (value === '' || value === '.' || value === '0' || value === '0.' || !isNaN(parseFloat(value))) {
+                  setFormData(prev => ({
+                    ...prev,
+                    minimumPaymentInput: value,
+                    minimumPayment: value === '' || value === '.' ? 0 : parseFloat(value)
+                  }));
+                }
+              }}
+              pattern="[0-9]*\.?[0-9]*"
+              inputMode="decimal"
+              className="block w-full pl-7 pr-12 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <span className="text-gray-500 sm:text-sm">USD</span>
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">Required monthly payment for this debt</p>
+        </div>
+      )}
       
       {/* Notes */}
       <div>

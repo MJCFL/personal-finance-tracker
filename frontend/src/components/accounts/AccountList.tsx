@@ -64,6 +64,9 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete })
               Balance
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Interest Rate
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Status
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -94,6 +97,16 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete })
                 <div className={`text-sm font-medium ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(account.balance)}
                 </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                {(account.type === AccountType.CREDIT_CARD || account.type === AccountType.LOAN || account.type === AccountType.MORTGAGE) && (
+                  <div className="text-sm text-gray-900">
+                    {account.interestRate !== undefined ? `${account.interestRate.toFixed(2)}%` : 'N/A'}
+                  </div>
+                )}
+                {!(account.type === AccountType.CREDIT_CARD || account.type === AccountType.LOAN || account.type === AccountType.MORTGAGE) && (
+                  <div className="text-sm text-gray-400">—</div>
+                )}
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Asset, AssetCategory, ASSET_CATEGORIES } from '@/types/asset';
+import { handleNumberInputChange } from '@/utils/inputHelpers';
 
 interface AssetFormProps {
   onSubmit: (asset: Omit<Asset, 'id' | 'dateAdded' | 'lastUpdated'>) => void;
@@ -20,6 +21,31 @@ export default function AssetForm({ onSubmit }: AssetFormProps) {
   }, []);
 
 
+
+  // Custom handlers for number inputs to fix leading zero issues
+  const handleQuantityChange = (value: string) => {
+    if (value === '') {
+      setQuantity(0);
+      return;
+    }
+    
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setQuantity(numValue);
+    }
+  };
+
+  const handleValueChange = (value: string) => {
+    if (value === '') {
+      setValue(0);
+      return;
+    }
+    
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setValue(numValue);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,8 +119,8 @@ export default function AssetForm({ onSubmit }: AssetFormProps) {
         <input
           type="number"
           id="quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(Number(e.target.value))}
+          value={quantity === 0 ? '' : quantity}
+          onChange={(e) => handleQuantityChange(e.target.value)}
           min="0"
           step="1"
           className="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -112,8 +138,8 @@ export default function AssetForm({ onSubmit }: AssetFormProps) {
           <input
             type="number"
             id="value"
-            value={value}
-            onChange={(e) => setValue(Number(e.target.value))}
+            value={value === 0 ? '' : value}
+            onChange={(e) => handleValueChange(e.target.value)}
             min="0"
             step="0.01"
             className="pl-7 block w-full rounded-md border-gray-700 bg-gray-800 text-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"

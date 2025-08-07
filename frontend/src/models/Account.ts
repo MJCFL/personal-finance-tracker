@@ -20,6 +20,8 @@ export interface AccountDocument extends mongoose.Document {
   accountNumber?: string; // Last 4 digits only for security
   isActive: boolean;
   notes?: string;
+  interestRate?: number; // Annual interest rate (APR) as a percentage
+  minimumPayment?: number; // Minimum monthly payment amount
   createdAt: Date;
   updatedAt: Date;
 }
@@ -63,6 +65,28 @@ const AccountSchema = new Schema(
     notes: {
       type: String,
       trim: true,
+    },
+    interestRate: {
+      type: Number,
+      min: [0, 'Interest rate cannot be negative'],
+      max: [100, 'Interest rate cannot exceed 100%'],
+      default: 0,  // Always default to 0 instead of undefined
+      set: function(v: any) {
+        // Always convert to number and ensure it's not undefined
+        if (v === undefined || v === null) return 0;
+        const num = Number(v);
+        return isNaN(num) ? 0 : num;
+      },
+      get: function(v: any) {
+        // Always return a number, never undefined
+        if (v === undefined || v === null) return 0;
+        const num = Number(v);
+        return isNaN(num) ? 0 : num;
+      }
+    },
+    minimumPayment: {
+      type: Number,
+      min: [0, 'Minimum payment cannot be negative'],
     },
   },
   {

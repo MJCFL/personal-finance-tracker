@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { InvestmentAccountType } from '@/types/investment';
 import { createInvestmentAccount } from '@/services/investmentService';
+import { handleNumberInputChange } from '@/utils/inputHelpers';
 import Modal from '../ui/Modal';
 
 interface AddInvestmentAccountModalProps {
@@ -18,6 +19,8 @@ const AddInvestmentAccountModal: React.FC<AddInvestmentAccountModalProps> = ({
   const [institution, setInstitution] = useState('');
   const [type, setType] = useState<InvestmentAccountType>(InvestmentAccountType.BROKERAGE);
   const [cash, setCash] = useState(0);
+  // Separate state for cash input to preserve string format during typing
+  const [cashInput, setCashInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -140,13 +143,31 @@ const AddInvestmentAccountModal: React.FC<AddInvestmentAccountModalProps> = ({
             Initial Cash Balance ($)
           </label>
           <input
-            type="number"
+            type="text"
             id="cash"
-            value={cash}
-            onChange={(e) => setCash(Number(e.target.value))}
-            min="0"
-            step="0.01"
+            value={cashInput}
+            onChange={(e) => {
+              const value = e.target.value;
+              
+              // Allow empty input, single decimal point, or valid numbers (including leading zeros)
+              if (value === '' || value === '.' || value === '0' || value === '0.' || !isNaN(parseFloat(value))) {
+                setCashInput(value);
+                
+                // Update the actual cash value with the numeric value when appropriate
+                if (value === '' || value === '.') {
+                  setCash(0);
+                } else {
+                  const numValue = parseFloat(value);
+                  if (!isNaN(numValue)) {
+                    setCash(numValue);
+                  }
+                }
+              }
+            }}
+            pattern="[0-9]*\.?[0-9]*"
+            inputMode="decimal"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            placeholder="0.00"
           />
           <p className="mt-1 text-xs text-gray-500">
             Cash balance in the account (uninvested funds)

@@ -11,6 +11,7 @@ export interface AccountData {
   isActive: boolean;
   notes?: string;
   interestRate?: number;
+  minimumPayment?: number;
 }
 
 // Get all accounts
@@ -99,6 +100,27 @@ export async function createAccount(accountData: AccountData): Promise<AccountDa
 // Update an existing account
 export async function updateAccount(id: string, accountData: Partial<AccountData>): Promise<AccountData> {
   try {
+    // Log the account data being sent to the API
+    console.log('Updating account with ID:', id);
+    console.log('Account data being sent to API:', accountData);
+    
+    // CRITICAL FIX: Always ensure interest rate is properly processed for all accounts
+    if (accountData.interestRate !== undefined) {
+      // Convert to number and handle NaN
+      const interestRateValue = Number(accountData.interestRate);
+      accountData.interestRate = isNaN(interestRateValue) ? 0 : interestRateValue;
+      console.log('Service: Processed interest rate as number:', accountData.interestRate);
+    }
+    
+    // For liability accounts, ALWAYS explicitly include interest rate, even if it's 0
+    if (accountData.type === AccountType.CREDIT_CARD || 
+        accountData.type === AccountType.LOAN || 
+        accountData.type === AccountType.MORTGAGE) {
+      // If undefined, set to 0; otherwise keep the processed value
+      accountData.interestRate = accountData.interestRate !== undefined ? accountData.interestRate : 0;
+      console.log('Service: Ensuring interest rate for liability account:', accountData.interestRate);
+    }
+    
     const response = await fetch(`/api/accounts/${id}`, {
       method: 'PUT',
       headers: {
@@ -109,10 +131,12 @@ export async function updateAccount(id: string, accountData: Partial<AccountData
 
     if (!response.ok) {
       const error = await response.json();
+      console.error('Error updating account:', error);
       throw new Error(error.error || 'Failed to update account');
     }
 
     const result = await response.json();
+    console.log('Account updated successfully:', result);
     
     // Emit event to notify that financial data has changed
     eventEmitter.emit(FINANCIAL_DATA_CHANGED);

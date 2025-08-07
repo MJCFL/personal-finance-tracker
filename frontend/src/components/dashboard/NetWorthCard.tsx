@@ -49,8 +49,8 @@ export default function NetWorthCard() {
         // Create net worth history
         const netWorthData: NetWorthData[] = [];
         
-        // Only create history if we have actual net worth data
-        if (totalNetWorth > 0) {
+        // Create history for any net worth (positive or negative)
+        if (totalNetWorth !== 0) {
           // Start with a reasonable baseline for previous months if we don't have enough data
           // This is just for demonstration - in a real app, you'd have historical snapshots
           let previousMonthValue = totalNetWorth * 0.95; // 5% less than current as a starting point
@@ -92,10 +92,10 @@ export default function NetWorthCard() {
     netWorthHistory[netWorthHistory.length - 1].amount : 0;
   const previousNetWorth = netWorthHistory.length > 1 ? 
     netWorthHistory[netWorthHistory.length - 2].amount : 0;
-  // Only show percentage change if we have real data
-  const hasRealData = currentNetWorth > 0 && previousNetWorth > 0;
-  const percentageChange = hasRealData && previousNetWorth > 0 ? 
-    ((currentNetWorth - previousNetWorth) / previousNetWorth) * 100 : 0;
+  // Show percentage change if we have real data (positive or negative net worth)
+  const hasRealData = currentNetWorth !== 0 && previousNetWorth !== 0;
+  const percentageChange = hasRealData && previousNetWorth !== 0 ? 
+    ((currentNetWorth - previousNetWorth) / Math.abs(previousNetWorth)) * 100 : 0;
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 col-span-2">

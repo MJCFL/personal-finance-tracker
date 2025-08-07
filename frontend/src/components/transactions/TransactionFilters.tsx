@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useState } from 'react';
+import { handleStringNumberInputChange } from '@/utils/inputHelpers';
 
 interface DateRange {
   start: string;
@@ -64,13 +66,16 @@ export default function TransactionFilters() {
   };
 
   const handleAmountRangeChange = (field: 'min' | 'max', value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      amountRange: {
-        ...prev.amountRange,
-        [field]: value
-      }
-    }));
+    // Use our custom number input handler for better user experience with leading zeros
+    handleStringNumberInputChange(value, (newValue) => {
+      setFilters(prev => ({
+        ...prev,
+        amountRange: {
+          ...prev.amountRange,
+          [field]: newValue
+        }
+      }));
+    }, true);
   };
 
   const handleTypeChange = (type: FiltersState['type']) => {

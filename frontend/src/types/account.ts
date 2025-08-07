@@ -19,6 +19,7 @@ export interface Account {
   userId: string;
   isActive: boolean;
   interestRate?: number;
+  minimumPayment?: number;
 }
 
 export const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [

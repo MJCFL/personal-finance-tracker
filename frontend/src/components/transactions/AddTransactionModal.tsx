@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createTransaction } from '@/services/transactionService';
 import { BudgetCategory, TransactionType } from '@/types/commonTypes';
+import { handleStringNumberInputChange } from '@/utils/inputHelpers';
 
 interface TransactionFormData {
   type: TransactionType;
@@ -210,7 +211,7 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
                 type="number"
                 step="0.01"
                 value={formData.amount}
-                onChange={(e) => handleInputChange('amount', e.target.value)}
+                onChange={(e) => handleStringNumberInputChange(e.target.value, (value) => handleInputChange('amount', value))}
                 className="block w-full pl-7 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 required
               />

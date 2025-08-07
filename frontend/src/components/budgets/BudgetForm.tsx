@@ -5,6 +5,7 @@ import { Budget, BudgetCategory, BudgetFormData, BUDGET_CATEGORIES, BudgetPeriod
 import { createBudget, updateBudget } from '@/services/budgetService';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import SuccessMessage from '@/components/ui/SuccessMessage';
+import { handleNumberInputChange } from '@/utils/inputHelpers';
 
 interface BudgetFormProps {
   budget?: Budget;
@@ -54,7 +55,10 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       const checked = (e.target as HTMLInputElement).checked;
       setFormData(prev => ({ ...prev, [name]: checked }));
     } else if (name === 'amount') {
-      setFormData(prev => ({ ...prev, [name]: parseFloat(value) || 0 }));
+      // Use our custom number input handler for better user experience
+      handleNumberInputChange(value, (newValue) => {
+        setFormData(prev => ({ ...prev, [name]: newValue === '' ? 0 : newValue }));
+      });
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -160,7 +164,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
               type="number"
               id="amount"
               name="amount"
-              value={formData.amount}
+              value={formData.amount === 0 ? '' : formData.amount}
               onChange={handleChange}
               required
               min="0"

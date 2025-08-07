@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { IStock } from '@/models/InvestmentAccount';
 import { addStock, searchStocks, getStockPrice } from '@/services/investmentService';
 import Modal from '../ui/Modal';
+import { handleNumberInputChange, handleStringNumberInputChange } from '@/utils/inputHelpers';
 
 interface AddStockModalProps {
   accountId: string;
@@ -217,7 +218,7 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
                 type="number"
                 id="shares"
                 value={shares}
-                onChange={(e) => setShares(e.target.value)}
+                onChange={(e) => handleStringNumberInputChange(e.target.value, setShares)}
                 min="0.0001"
                 step="0.0001"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -233,7 +234,7 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
                 type="number"
                 id="avgBuyPrice"
                 value={avgBuyPrice}
-                onChange={(e) => setAvgBuyPrice(e.target.value)}
+                onChange={(e) => handleStringNumberInputChange(e.target.value, setAvgBuyPrice)}
                 min="0.01"
                 step="0.01"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -250,7 +251,7 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
                   type="number"
                   id="currentPrice"
                   value={currentPrice}
-                  onChange={(e) => setCurrentPrice(e.target.value)}
+                  onChange={(e) => handleStringNumberInputChange(e.target.value, setCurrentPrice)}
                   min="0.01"
                   step="0.01"
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"

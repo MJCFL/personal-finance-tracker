@@ -134,29 +134,29 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
           <p className="text-gray-500 mt-2">Click "Add Stock" to add your first stock.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="w-full">
+          <table className="w-full table-fixed divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
                   Stock
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/10">
                   Shares
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/10">
                   Avg. Cost
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                   Current Price
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                   Value
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                   Gain/Loss
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
                   Actions
                 </th>
               </tr>
@@ -170,19 +170,19 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
                 
                 return (
                   <tr key={stock.ticker}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 py-4 whitespace-nowrap">
                       <div className="flex flex-col">
                         <div className="text-sm font-medium text-gray-900">{stock.ticker}</div>
                         <div className="text-sm text-gray-500">{stock.companyName}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-500">
                       {stock.shares.toLocaleString('en-US', { maximumFractionDigits: 4 })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                    <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-500">
                       ${stock.avgBuyPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-3 py-4 whitespace-nowrap text-right">
                       <div className="text-sm text-gray-900">
                         ${stock.currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
@@ -190,13 +190,13 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
                         Updated {formatDate(stock.lastUpdated.toString())}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
+                    <td className="px-3 py-4 whitespace-nowrap text-right text-sm text-gray-900">
                       ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       <div className="text-xs text-gray-500">
                         {((value / totalPortfolioValue) * 100).toFixed(1)}% of portfolio
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-3 py-4 whitespace-nowrap text-right">
                       <div className={`text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                         {isPositive ? '+' : ''}${Math.abs(gainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
@@ -204,7 +204,7 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
                         {isPositive ? '+' : ''}{gainLossPercentage.toFixed(2)}%
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-3">
                         <button
                           onClick={() => setStockToSell(stock)}

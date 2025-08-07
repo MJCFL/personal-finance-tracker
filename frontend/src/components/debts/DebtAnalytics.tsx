@@ -95,7 +95,8 @@ const DebtAnalytics: React.FC<DebtAnalyticsProps> = ({ debt }) => {
   // Calculate detailed payoff scenario
   function calculatePayoffScenario(debt: AccountData, monthlyPayment: number): PayoffScenario {
     const balance = Math.abs(debt.balance);
-    const interestRate = debt.interestRate || 5; // Default to 5% if not specified
+    // Use the actual interest rate or 0 if not specified
+    const interestRate = debt.interestRate !== undefined ? debt.interestRate : 0;
     const monthlyRate = interestRate / 100 / 12;
     
     let remainingBalance = balance;
@@ -187,7 +188,13 @@ const DebtAnalytics: React.FC<DebtAnalyticsProps> = ({ debt }) => {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold mb-4">Debt Payoff Calculator</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Debt Payoff Calculator</h2>
+          <div className="text-right">
+            <span className="text-sm text-gray-500">Current Interest Rate:</span>
+            <span className="ml-2 font-bold text-blue-600">{debt.interestRate !== undefined && debt.interestRate > 0 ? `${debt.interestRate}%` : `${debt.interestRate || 0}%`}</span>
+          </div>
+        </div>
         
         <div className="mb-6">
           <label htmlFor="monthlyPayment" className="block text-sm font-medium mb-1">
