@@ -533,6 +533,7 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
   try {
     const session = await getSession();
     if (!session) {
+      console.log('No session found, returning default financial summary');
       return {
         totalBalance: 0,
         netWorth: 0,
@@ -540,9 +541,18 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
         monthlyExpenses: 0
       };
     }
+    
+    console.log('Session found, calculating financial summary...');
 
     // Get all accounts to calculate total balance and net worth
-    const accounts = await getAccounts();
+    let accounts: any[] = [];
+    try {
+      accounts = await getAccounts();
+      console.log(`Retrieved ${accounts.length} accounts for financial summary`);
+    } catch (error) {
+      console.error('Error fetching accounts:', error);
+      accounts = [];
+    }
     
     // Calculate checking account balance (cash only)
     const totalBalance = accounts.reduce((total, account) => {
@@ -553,6 +563,8 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
       return total;
     }, 0);
     
+    console.log(`Calculated total balance: ${totalBalance}`);
+    
     // Calculate net worth (assets minus liabilities)
     let netWorth = accounts.reduce((total, account) => {
       if (account.type === AccountType.CREDIT_CARD || account.type === AccountType.LOAN || account.type === AccountType.MORTGAGE) {
@@ -561,23 +573,39 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
       return total + (account.balance || 0); // Add assets
     }, 0);
     
+    console.log(`Calculated net worth from accounts: ${netWorth}`);
+    
     // Get investment accounts and add their value to net worth
     try {
       const { getInvestmentAccounts } = await import('@/services/investmentService');
       const investmentAccounts = await getInvestmentAccounts();
       
+      console.log(`Retrieved ${investmentAccounts.length} investment accounts for financial summary`);
+      
       // Add investment account values to net worth
       const investmentValue = investmentAccounts.reduce((total, account) => {
-        // Calculate stocks value
-        const stocksValue = account.stocks.reduce((stockTotal, stock) => {
-          return stockTotal + (stock.shares * stock.currentPrice);
-        }, 0);
-        
-        // Add stocks value and cash
-        return total + stocksValue + (account.cash || 0);
+        try {
+          // Calculate stocks value
+          const stocksValue = Array.isArray(account.stocks) ? account.stocks.reduce((stockTotal, stock) => {
+            if (!stock || typeof stock.shares !== 'number' || typeof stock.currentPrice !== 'number') {
+              console.warn('Invalid stock data:', stock);
+              return stockTotal;
+            }
+            return stockTotal + (stock.shares * stock.currentPrice);
+          }, 0) : 0;
+          
+          // Add stocks value and cash
+          const cashValue = typeof account.cash === 'number' ? account.cash : 0;
+          return total + stocksValue + cashValue;
+        } catch (accountError) {
+          console.error('Error processing investment account:', accountError, account);
+          return total;
+        }
       }, 0);
       
+      console.log(`Calculated investment value: ${investmentValue}`);
       netWorth += investmentValue;
+      console.log(`Updated net worth with investments: ${netWorth}`);
     } catch (error) {
       console.error('Error fetching investment accounts for net worth calculation:', error);
       // Continue without investment accounts if there's an error
