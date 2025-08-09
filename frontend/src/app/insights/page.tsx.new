@@ -5,10 +5,12 @@ import {
   getSpendingPatterns,
   getAnomalies,
   getRecommendations,
+  getSavingsGoals,
   getCategoryInsights,
   SpendingPattern,
   Anomaly,
   Recommendation,
+  SavingsGoal,
   CategoryInsight
 } from '@/services/insightsService';
 import AssetAllocationChart from '@/components/analytics/AssetAllocationChart';
@@ -21,6 +23,7 @@ export default function Insights() {
   const [spendingPatterns, setSpendingPatterns] = useState<SpendingPattern[]>([]);
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [categoryInsights, setCategoryInsights] = useState<CategoryInsight[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,17 +38,20 @@ export default function Insights() {
           patternsData,
           anomaliesData,
           recommendationsData,
+          goalsData,
           insightsData
         ] = await Promise.all([
           getSpendingPatterns(),
           getAnomalies(),
           getRecommendations(),
+          getSavingsGoals(),
           getCategoryInsights()
         ]);
         
         setSpendingPatterns(patternsData);
         setAnomalies(anomaliesData);
         setRecommendations(recommendationsData);
+        setSavingsGoals(goalsData);
         setCategoryInsights(insightsData);
         setError(null);
       } catch (err) {
@@ -95,6 +101,16 @@ export default function Insights() {
                 }`}
               >
                 Spending Patterns
+              </button>
+              <button
+                onClick={() => setSelectedTab('goals')}
+                className={`px-4 py-2 rounded-md ${
+                  selectedTab === 'goals'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Savings Goals
               </button>
             </div>
           </div>
@@ -291,7 +307,48 @@ export default function Insights() {
             </div>
           )}
 
-
+          {selectedTab === 'goals' && (
+            <div className="space-y-6">
+              {/* Savings Goals */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-semibold">Savings Goals</h2>
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    Add Goal
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {savingsGoals.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4 col-span-2">No savings goals available</p>
+                  ) : savingsGoals.map((goal) => {
+                    const progress = (goal.current / goal.target) * 100;
+                    return (
+                      <div key={goal.id} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-medium">{goal.name}</h3>
+                          <span className="text-blue-600 font-medium">
+                            ${goal.current.toFixed(2)} / ${goal.target.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="relative pt-1">
+                          <div className="overflow-hidden h-2 text-xs flex rounded bg-gray-200">
+                            <div
+                              style={{ width: `${progress}%` }}
+                              className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-2 flex justify-between text-sm text-gray-600">
+                          <span>Monthly contribution: ${goal.monthlyContribution.toFixed(2)}</span>
+                          <span>Target: {goal.projectedCompletion}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </ProtectedRoute>

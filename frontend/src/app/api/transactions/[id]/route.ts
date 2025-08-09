@@ -139,9 +139,9 @@ export async function PUT(
       
       // Revert original transaction's effect on account balance
       let originalBalanceChange = 0;
-      if (originalTransaction.type === 'income') {
+      if (originalTransaction.type === 'Income') {
         originalBalanceChange = -originalTransaction.amount;
-      } else if (originalTransaction.type === 'expense') {
+      } else if (originalTransaction.type === 'Expense') {
         originalBalanceChange = originalTransaction.amount;
       }
 
@@ -154,9 +154,9 @@ export async function PUT(
 
       // Apply new transaction's effect on account balance
       let newBalanceChange = 0;
-      if (body.type === 'income') {
+      if (body.type === 'Income') {
         newBalanceChange = body.amount;
-      } else if (body.type === 'expense') {
+      } else if (body.type === 'Expense') {
         newBalanceChange = -body.amount;
       }
 
@@ -169,7 +169,7 @@ export async function PUT(
     }
 
     // Handle budget spent amount adjustments
-    if (originalTransaction.type === 'expense' && originalTransaction.budgetId) {
+    if (originalTransaction.type === 'Expense' && originalTransaction.budgetId) {
       // Revert original transaction's effect on budget spent amount
       await Budget.findByIdAndUpdate(
         originalTransaction.budgetId,
@@ -177,7 +177,7 @@ export async function PUT(
       );
     }
 
-    if (body.type === 'expense' && body.budgetId) {
+    if (body.type === 'Expense' && body.budgetId) {
       // Apply new transaction's effect on budget spent amount
       await Budget.findByIdAndUpdate(
         body.budgetId,

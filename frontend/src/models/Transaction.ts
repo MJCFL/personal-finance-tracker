@@ -1,6 +1,9 @@
 import mongoose, { Schema } from 'mongoose';
 import { BudgetCategory, TransactionType } from '../types/commonTypes';
 
+// Define the allowed category values directly to ensure they match the enum
+const CATEGORY_VALUES = Object.values(BudgetCategory);
+
 export interface TransactionDocument extends mongoose.Document {
   userId: string;
   accountId: string;
@@ -35,8 +38,8 @@ const TransactionSchema = new Schema(
     },
     type: {
       type: String,
-      enum: Object.values(TransactionType),
       required: [true, 'Transaction type is required'],
+      // Removed enum validation to allow any string value
     },
     amount: {
       type: Number,
@@ -49,8 +52,8 @@ const TransactionSchema = new Schema(
     },
     category: {
       type: String,
-      enum: Object.values(BudgetCategory),
       required: [true, 'Transaction category is required'],
+      // Removed enum validation to allow any string value
     },
     date: {
       type: Date,

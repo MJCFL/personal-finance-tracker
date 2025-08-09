@@ -8,13 +8,15 @@ interface TransactionListProps {
   isLoading?: boolean;
   accountMap?: Record<string, string>;
   onTransactionChange?: () => void;
+  onEdit?: (transaction: TransactionData) => void;
 }
 
 export default function TransactionList({ 
   transactions, 
   isLoading = false, 
   accountMap = {}, 
-  onTransactionChange 
+  onTransactionChange,
+  onEdit
 }: TransactionListProps) {
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
@@ -170,9 +172,9 @@ export default function TransactionList({
                   </div>
                   <div className="text-right shrink-0">
                     <p className={`text-sm font-medium ${
-                      transaction.amount >= 0 ? 'text-emerald-400' : 'text-white'
+                      transaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
                     }`}>
-                      {transaction.amount >= 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
+                      {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
                     </p>
                     <div className="text-sm text-gray-400">
                       {accountMap[transaction.accountId] || 'Unknown Account'}
@@ -195,7 +197,10 @@ export default function TransactionList({
               </div>
 
               <div className="flex items-center space-x-3">
-                <button className="text-gray-400 hover:text-white">
+                <button 
+                  className="text-gray-400 hover:text-white"
+                  onClick={() => onTransactionChange && transaction.id && onEdit && onEdit(transaction)}
+                >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>

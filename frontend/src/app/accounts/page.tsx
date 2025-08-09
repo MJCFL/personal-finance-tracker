@@ -163,7 +163,8 @@ export default function AccountsPage() {
           }}
         >
             <AccountForm 
-              account={editingAccount}
+              initialData={editingAccount}
+              isEdit={!!editingAccount}
               onSave={handleAccountSaved}
               onCancel={() => {
                 setShowModal(false);

@@ -61,6 +61,7 @@ function TransactionsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<TransactionData | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -159,6 +160,12 @@ function TransactionsPageContent() {
       setError(err.message || 'Failed to refresh transactions');
       setIsLoading(false);
     }
+  };
+
+  // Handle edit transaction
+  const handleEditTransaction = (transaction: TransactionData) => {
+    setEditingTransaction(transaction);
+    setShowAddModal(true);
   };
 
   if (error) {
@@ -348,6 +355,7 @@ function TransactionsPageContent() {
               isLoading={isLoading} 
               accountMap={accountMap} 
               onTransactionChange={handleTransactionChange}
+              onEdit={handleEditTransaction}
             />
           </div>
           <div className="lg:col-span-1">
@@ -359,12 +367,16 @@ function TransactionsPageContent() {
         </div>
       </div>
       
-      {/* Add Transaction Modal */}
+      {/* Add/Edit Transaction Modal */}
       {showAddModal && (
         <AddTransactionModal 
-          onClose={() => setShowAddModal(false)}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingTransaction(null);
+          }}
           onTransactionAdded={handleTransactionChange}
           accounts={accounts}
+          transaction={editingTransaction}
         />
       )}
     </div>

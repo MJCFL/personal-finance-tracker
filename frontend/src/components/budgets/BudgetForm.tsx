@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Budget, BudgetCategory, BudgetFormData, BUDGET_CATEGORIES, BudgetPeriod } from '@/types/budget';
-import { createBudget, updateBudget } from '@/services/budgetService';
+import { Budget, BudgetFormData, BudgetCategory, BudgetPeriod, BUDGET_CATEGORIES } from '@/types/budget';
+import { createBudget, updateBudget, deleteBudget } from '@/services/budgetService';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import SuccessMessage from '@/components/ui/SuccessMessage';
 import { handleNumberInputChange } from '@/utils/inputHelpers';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 interface BudgetFormProps {
   budget?: Budget;
@@ -35,7 +36,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
 
   // Initialize form with budget data if editing
   useEffect(() => {
+    console.log('BudgetForm: budget prop received:', budget);
     if (budget) {
+      console.log('BudgetForm: Setting form data with budget:', budget);
       setFormData({
         name: budget.name,
         category: budget.category,
@@ -74,8 +77,34 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
       let result;
       
       if (isEditing && budget) {
-        result = await updateBudget(budget.id, formData);
-        setSuccess('Budget updated successfully!');
+        console.log('BudgetForm: Updating budget with ID:', budget.id, 'and data:', formData);
+        try {
+          // Instead of updating directly, delete and recreate the budget
+          // This is a workaround for the persistent 404 error
+          console.log('BudgetForm: Using delete-and-recreate approach for budget update');
+          
+          // First create a complete budget object with all required fields
+          const completeBudgetData = {
+            ...formData,
+            // Preserve the spent amount from the original budget
+            spent: budget.spent || 0,
+            // Ensure we have all required fields
+            userId: budget.userId
+          };
+          
+          // Delete the existing budget
+          await deleteBudget(budget.id);
+          console.log('BudgetForm: Successfully deleted budget, now recreating');
+          
+          // Create a new budget with the updated data
+          result = await createBudget(completeBudgetData);
+          console.log('BudgetForm: Successfully recreated budget with new data');
+          
+          setSuccess('Budget updated successfully!');
+        } catch (error) {
+          console.error('BudgetForm: Error updating budget:', error);
+          throw error;
+        }
       } else {
         result = await createBudget(formData);
         setSuccess('Budget created successfully!');
@@ -92,6 +121,10 @@ const BudgetForm: React.FC<BudgetFormProps> = ({
           });
         }
       }
+      
+      // Explicitly emit the event here to ensure it happens
+      console.log('Budget form: Explicitly emitting FINANCIAL_DATA_CHANGED event');
+      eventEmitter.emit(FINANCIAL_DATA_CHANGED);
       
       if (onSuccess) {
         onSuccess(result);

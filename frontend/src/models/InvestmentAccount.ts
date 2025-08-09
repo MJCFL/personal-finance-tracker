@@ -1,22 +1,22 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export enum TransactionType {
-  BUY = 'buy',
-  SELL = 'sell',
-  REMOVE = 'remove',
-  DIVIDEND = 'dividend',
-  DEPOSIT = 'deposit',
-  WITHDRAWAL = 'withdrawal',
+  BUY = 'Buy',
+  SELL = 'Sell',
+  REMOVE = 'Remove',
+  DIVIDEND = 'Dividend',
+  DEPOSIT = 'Deposit',
+  WITHDRAWAL = 'Withdrawal',
 }
 
 export enum InvestmentAccountType {
-  BROKERAGE = 'brokerage',
-  RETIREMENT_401K = '401k',
-  ROTH_IRA = 'roth_ira',
-  TRADITIONAL_IRA = 'traditional_ira',
-  EDUCATION_529 = '529',
-  HSA = 'hsa',
-  OTHER = 'other',
+  BROKERAGE = 'Brokerage',
+  RETIREMENT_401K = '401(k)',
+  ROTH_IRA = 'Roth IRA',
+  TRADITIONAL_IRA = 'Traditional IRA',
+  EDUCATION_529 = '529 Plan',
+  HSA = 'HSA',
+  OTHER = 'Other',
 }
 
 export interface IStock {

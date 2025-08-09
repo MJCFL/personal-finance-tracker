@@ -18,7 +18,8 @@ const defaultFinancialSummary: FinancialSummary = {
   totalBalance: 0,
   netWorth: 0,
   monthlyIncome: 0,
-  monthlyExpenses: 0
+  monthlyExpenses: 0,
+  emergencyFund: 0
 };
 
 const FinancialContext = createContext<FinancialContextType>({
@@ -138,12 +139,9 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       refreshFinancialData();
     });
     
-    // Set up periodic refresh for financial data (every 5 seconds)
-    // Reduced from 10 seconds to ensure more timely updates
-    const intervalId = setInterval(() => {
-      console.log('Periodic financial data refresh');
-      refreshFinancialData();
-    }, 5000);
+    // Define a dummy intervalId to maintain the expected structure
+    // This avoids the null reference error while still removing the periodic refresh
+    const intervalId = { current: null };
     
     // Set up session check interval (every 30 seconds)
     // This helps detect session timeouts and ensures we keep showing data
@@ -162,7 +160,7 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
     // Clean up subscription and intervals when component unmounts
     return () => {
       unsubscribe();
-      clearInterval(intervalId);
+      // No need to clear intervalId as it's now a dummy object
       clearInterval(sessionCheckId);
     };
   }, [session]); // Added session dependency to react to session changes

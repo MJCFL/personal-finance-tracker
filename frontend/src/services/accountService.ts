@@ -1,4 +1,4 @@
-import { AccountType } from '@/types/account';
+import { AccountType, SavingsBucket } from '@/types/account';
 import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 export interface AccountData {
@@ -12,6 +12,8 @@ export interface AccountData {
   notes?: string;
   interestRate?: number;
   minimumPayment?: number;
+  userId?: string;
+  buckets?: SavingsBucket[];
 }
 
 // Get all accounts

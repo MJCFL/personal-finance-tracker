@@ -24,7 +24,7 @@ export default function FinancialHealthCard() {
         
         // Fetch accounts and transactions to calculate health metrics
         const accountsResponse = await getAccounts();
-        const accounts = accountsResponse.accounts || [];
+        const accounts = accountsResponse || [];
         
         // Get transactions from the last 3 months
         const endDate = new Date();
@@ -151,34 +151,34 @@ export default function FinancialHealthCard() {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <div className="flex items-start justify-between mb-6">
+    <div className="p-3">
+      <div className="flex items-start justify-between mb-2">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Financial Health Score</h3>
-          <p className="text-sm text-gray-500 mt-1">Based on key financial metrics</p>
+          <h3 className="text-sm font-semibold text-gray-900">Financial Health Score</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Based on key financial metrics</p>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold text-gray-900">{overallScore}</p>
-          <p className="text-sm text-gray-500">out of 100</p>
+          <p className="text-xl font-bold text-gray-900">{overallScore}</p>
+          <p className="text-xs text-gray-500">out of 100</p>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-1">
         {loading ? (
-          <p className="text-sm text-gray-500">Loading health metrics...</p>
+          <p className="text-xs text-gray-500">Loading health metrics...</p>
         ) : error ? (
-          <p className="text-sm text-red-500">{error}</p>
+          <p className="text-xs text-red-500">{error}</p>
         ) : healthMetrics.length === 0 ? (
-          <p className="text-sm text-gray-500">No health metrics available yet. Add transactions and accounts to see insights.</p>
+          <p className="text-xs text-gray-500">No health metrics available yet. Add transactions and accounts to see insights.</p>
         ) : (
           healthMetrics.map((metric: HealthMetric) => (
-            <div key={metric.name} className="flex items-center justify-between">
+            <div key={metric.name} className="flex items-center justify-between py-1">
               <div>
-                <p className="text-sm font-medium text-gray-900">{metric.name}</p>
+                <p className="text-xs font-medium text-gray-900">{metric.name}</p>
                 <p className="text-xs text-gray-500">{metric.description}</p>
               </div>
-              <div className={`px-3 py-1 rounded-full ${getStatusColor(metric.status)}`}>
-                <span className="text-sm font-medium">{metric.score}</span>
+              <div className={`px-2 py-0.5 rounded-full ${getStatusColor(metric.status)}`}>
+                <span className="text-xs font-medium">{metric.score}</span>
               </div>
             </div>
           ))

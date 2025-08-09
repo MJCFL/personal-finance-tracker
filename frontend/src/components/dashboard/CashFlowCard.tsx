@@ -92,25 +92,25 @@ export default function CashFlowCard() {
   const cashFlow = currentMonth.income - currentMonth.expenses;
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <div className="flex justify-between items-start mb-4">
+    <div className="p-4">
+      <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Monthly Cash Flow</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-2">
+          <h3 className="text-base font-semibold text-gray-900">Monthly Cash Flow</h3>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
             ${cashFlow.toLocaleString()}
           </p>
-          <div className="flex gap-4 mt-1">
-            <p className="text-sm text-green-600">
+          <div className="flex gap-3 mt-0.5">
+            <p className="text-xs text-green-600">
               +${currentMonth.income.toLocaleString()} Income
             </p>
-            <p className="text-sm text-red-600">
+            <p className="text-xs text-red-600">
               -${currentMonth.expenses.toLocaleString()} Expenses
             </p>
           </div>
         </div>
       </div>
       
-      <div className="h-48 mt-4">
+      <div className="h-40 mt-2">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">Loading cash flow data...</p>

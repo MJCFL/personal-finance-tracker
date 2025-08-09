@@ -9,43 +9,46 @@ import FinancialHealthCard from '@/components/dashboard/FinancialHealthCard';
 
 export default function DashboardPage() {
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
+    <div className="p-4 max-w-7xl mx-auto">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Your Financial Snapshot</h1>
-        <p className="text-gray-500">Track, analyze, and improve your financial health</p>
+        <p className="text-gray-500 text-sm">Track, analyze, and improve your financial health</p>
       </div>
 
-      {/* Main grid layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Net Worth Card - Spans 2 columns */}
-        <div className="md:col-span-2">
+      {/* Top row - Net Worth and Financial Health */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-4">
+        {/* Net Worth Card - Takes 3/4 of the width on large screens */}
+        <div className="lg:col-span-3 bg-white rounded-lg shadow">
           <NetWorthCard />
         </div>
 
-        {/* Financial Health Score */}
-        <div>
+        {/* Financial Health Score - Takes 1/4 of the width on large screens */}
+        <div className="bg-white rounded-lg shadow">
           <FinancialHealthCard />
         </div>
+      </div>
 
+      {/* Middle row - Cash Flow, Budget, and Top Spending */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Cash Flow Card */}
-        <div>
+        <div className="bg-white rounded-lg shadow">
           <CashFlowCard />
         </div>
 
         {/* Budget Preview Card */}
-        <div>
+        <div className="bg-white rounded-lg shadow">
           <BudgetPreviewCard />
         </div>
 
         {/* Top Spending Categories */}
-        <div>
+        <div className="bg-white rounded-lg shadow">
           <TopSpendingCard />
         </div>
+      </div>
 
-        {/* Recent Transactions - Spans full width */}
-        <div className="md:col-span-2 lg:col-span-3">
-          <RecentTransactionsCard />
-        </div>
+      {/* Bottom row - Recent Transactions */}
+      <div className="bg-white rounded-lg shadow mb-4">
+        <RecentTransactionsCard />
       </div>
 
       {/* Floating Quick Actions Button */}

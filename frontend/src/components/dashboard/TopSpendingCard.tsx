@@ -86,24 +86,24 @@ export default function TopSpendingCard() {
   const total = spendingData.reduce((sum, category) => sum + category.amount, 0);
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Spending Categories</h3>
+    <div className="p-4">
+      <h3 className="text-base font-semibold text-gray-900 mb-2">Top Spending Categories</h3>
       
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-gray-500">Loading spending data...</p>
+        <div className="flex items-center justify-center h-28">
+          <p className="text-xs text-gray-500">Loading spending data...</p>
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-red-500">{error}</p>
+        <div className="flex items-center justify-center h-28">
+          <p className="text-xs text-red-500">{error}</p>
         </div>
       ) : spendingData.length === 0 ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-gray-500">No spending data available</p>
+        <div className="flex items-center justify-center h-28">
+          <p className="text-xs text-gray-500">No spending data available</p>
         </div>
       ) : (
       <div className="flex items-center">
-        <div className="w-32 h-32">
+        <div className="w-28 h-28">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -112,8 +112,8 @@ export default function TopSpendingCard() {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                innerRadius={25}
-                outerRadius={45}
+                innerRadius={20}
+                outerRadius={40}
               >
                 {spendingData.map((entry, index) => (
                   <Cell key={index} fill={entry.color} />
@@ -127,18 +127,18 @@ export default function TopSpendingCard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="flex-1 ml-4">
-          <div className="space-y-2">
+        <div className="flex-1 ml-2">
+          <div className="space-y-1">
             {spendingData.map((category, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center">
                   <div 
-                    className="w-3 h-3 rounded-full mr-2" 
+                    className="w-2 h-2 rounded-full mr-1" 
                     style={{ backgroundColor: category.color }}
                   />
-                  <span className="text-sm text-gray-600">{category.name}</span>
+                  <span className="text-xs text-gray-600">{category.name}</span>
                 </div>
-                <div className="text-sm">
+                <div className="text-xs">
                   <span className="font-medium text-gray-900">
                     ${category.amount.toLocaleString()}
                   </span>

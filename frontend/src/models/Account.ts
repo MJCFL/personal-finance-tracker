@@ -11,6 +11,14 @@ export enum AccountType {
   OTHER = 'other',
 }
 
+export interface SavingsBucketDocument {
+  name: string;
+  amount: number;
+  goal?: number;
+  isEmergencyFund?: boolean;
+  notes?: string;
+}
+
 export interface AccountDocument extends mongoose.Document {
   userId: string;
   name: string;
@@ -22,6 +30,7 @@ export interface AccountDocument extends mongoose.Document {
   notes?: string;
   interestRate?: number; // Annual interest rate (APR) as a percentage
   minimumPayment?: number; // Minimum monthly payment amount
+  buckets?: SavingsBucketDocument[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +96,16 @@ const AccountSchema = new Schema(
     minimumPayment: {
       type: Number,
       min: [0, 'Minimum payment cannot be negative'],
+    },
+    buckets: {
+      type: [{
+        name: { type: String, required: true },
+        amount: { type: Number, required: true, min: 0 },
+        goal: { type: Number, min: 0 },
+        isEmergencyFund: { type: Boolean, default: false },
+        notes: { type: String }
+      }],
+      default: [],
     },
   },
   {

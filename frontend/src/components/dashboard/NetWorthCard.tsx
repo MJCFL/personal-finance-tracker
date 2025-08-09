@@ -98,35 +98,35 @@ export default function NetWorthCard() {
     ((currentNetWorth - previousNetWorth) / Math.abs(previousNetWorth)) * 100 : 0;
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6 col-span-2">
-      <div className="flex justify-between items-start mb-4">
+    <div className="p-4">
+      <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Net Worth</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-2">
+          <h3 className="text-base font-semibold text-gray-900">Net Worth</h3>
+          <p className="text-2xl font-bold text-gray-900 mt-1">
             ${currentNetWorth.toLocaleString()}
           </p>
           {hasRealData ? (
-            <p className={`text-sm mt-1 ${percentageChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`text-xs mt-1 ${percentageChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
               {percentageChange >= 0 ? '↑' : '↓'} {Math.abs(percentageChange).toFixed(1)}% from last month
             </p>
           ) : (
-            <p className="text-sm mt-1 text-gray-500">No historical data available</p>
+            <p className="text-xs mt-1 text-gray-500">No historical data available</p>
           )}
         </div>
       </div>
       
-      <div className="h-48 mt-4">
+      <div className="h-40 mt-2">
         {loading ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">Loading net worth data...</p>
+            <p className="text-xs text-gray-500">Loading net worth data...</p>
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-red-500">{error}</p>
+            <p className="text-xs text-red-500">{error}</p>
           </div>
         ) : netWorthHistory.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-gray-500">No net worth data available</p>
+            <p className="text-xs text-gray-500">No net worth data available</p>
           </div>
         ) : (
         <ResponsiveContainer width="100%" height="100%">

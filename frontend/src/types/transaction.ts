@@ -1,7 +1,7 @@
 export enum TransactionType {
-  INCOME = 'income',
-  EXPENSE = 'expense',
-  TRANSFER = 'transfer'
+  INCOME = 'Income',
+  EXPENSE = 'Expense',
+  TRANSFER = 'Transfer'
 }
 
 export interface Transaction {
@@ -10,7 +10,7 @@ export interface Transaction {
   description: string;
   amount: number;
   category: string;
-  type: TransactionType | 'income' | 'expense';
+  type: TransactionType | 'Income' | 'Expense';
   source?: string;
   notes?: string;
   account?: string;

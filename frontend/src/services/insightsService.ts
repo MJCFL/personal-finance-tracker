@@ -10,6 +10,7 @@ export interface FinancialSummary {
   netWorth: number; // Total assets including investments, minus liabilities
   monthlyIncome: number;
   monthlyExpenses: number;
+  emergencyFund: number; // Total in emergency fund buckets
 }
 
 export interface SpendingPattern {
@@ -538,7 +539,8 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
         totalBalance: 0,
         netWorth: 0,
         monthlyIncome: 0,
-        monthlyExpenses: 0
+        monthlyExpenses: 0,
+        emergencyFund: 0
       };
     }
     
@@ -572,6 +574,20 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
       }
       return total + (account.balance || 0); // Add assets
     }, 0);
+    
+    // Calculate emergency fund total from savings account buckets
+    let emergencyFund = 0;
+    accounts.forEach((account: any) => {
+      if (account.type === AccountType.SAVINGS && Array.isArray(account.buckets)) {
+        account.buckets.forEach((bucket: { isEmergencyFund?: boolean; amount?: number }) => {
+          if (bucket.isEmergencyFund) {
+            emergencyFund += bucket.amount || 0;
+          }
+        });
+      }
+    });
+    
+    console.log(`Calculated emergency fund total: ${emergencyFund}`);
     
     console.log(`Calculated net worth from accounts: ${netWorth}`);
     
@@ -639,7 +655,8 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
       totalBalance,
       netWorth,
       monthlyIncome,
-      monthlyExpenses
+      monthlyExpenses,
+      emergencyFund
     };
   } catch (error) {
     console.error('Error getting financial summary:', error);
@@ -647,7 +664,8 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
       totalBalance: 0,
       netWorth: 0,
       monthlyIncome: 0,
-      monthlyExpenses: 0
+      monthlyExpenses: 0,
+      emergencyFund: 0
     };
   }
 }

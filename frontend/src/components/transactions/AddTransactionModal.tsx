@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createTransaction } from '@/services/transactionService';
+import { createTransaction, updateTransaction, TransactionData } from '@/services/transactionService';
 import { BudgetCategory, TransactionType } from '@/types/commonTypes';
 import { handleStringNumberInputChange } from '@/utils/inputHelpers';
 
@@ -20,6 +20,7 @@ interface AddTransactionModalProps {
   onClose: () => void;
   onTransactionAdded?: () => void;
   accounts: any[];
+  transaction?: TransactionData | null;
 }
 
 const categories: BudgetCategory[] = [
@@ -33,10 +34,11 @@ const categories: BudgetCategory[] = [
   BudgetCategory.UTILITIES,
   BudgetCategory.INSURANCE,
   BudgetCategory.SAVINGS,
+  BudgetCategory.INCOME,
   BudgetCategory.OTHER
 ];
 
-export default function AddTransactionModal({ onClose, onTransactionAdded, accounts }: AddTransactionModalProps) {
+export default function AddTransactionModal({ onClose, onTransactionAdded, accounts, transaction }: AddTransactionModalProps) {
   const [formData, setFormData] = useState<TransactionFormData>({
     type: TransactionType.EXPENSE,
     date: new Date().toISOString().split('T')[0],
@@ -52,15 +54,29 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Set default account if available
+  // Set default account if available or pre-fill form with transaction data in edit mode
   useEffect(() => {
-    if (accounts.length > 0 && !formData.accountId) {
+    if (transaction) {
+      // Edit mode - pre-fill form with transaction data
+      setFormData({
+        type: transaction.type,
+        date: new Date(transaction.date).toISOString().split('T')[0],
+        description: transaction.description,
+        amount: transaction.amount.toString(),
+        category: transaction.category,
+        accountId: transaction.accountId,
+        isRecurring: transaction.isRecurring,
+        recurringFrequency: transaction.recurringFrequency,
+        tags: transaction.tags || []
+      });
+    } else if (accounts.length > 0 && !formData.accountId) {
+      // New transaction - set default account
       setFormData(prev => ({
         ...prev,
         accountId: accounts[0].id
       }));
     }
-  }, [accounts]);
+  }, [accounts, transaction]);
 
   const handleInputChange = (field: keyof TransactionFormData, value: string | boolean) => {
     setFormData(prev => ({
@@ -98,10 +114,16 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
         date: new Date(formData.date)
       };
       
-      console.log('Submitting transaction:', transactionData);
+      console.log(transaction ? 'Updating transaction:' : 'Creating transaction:', transactionData);
       
       // Submit to API
-      await createTransaction(transactionData);
+      if (transaction?.id) {
+        // Update existing transaction
+        await updateTransaction(transaction.id, transactionData);
+      } else {
+        // Create new transaction
+        await createTransaction(transactionData);
+      }
       
       // Notify parent component
       if (onTransactionAdded) {
@@ -112,7 +134,7 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
       onClose();
     } catch (err: any) {
       console.error('Transaction error:', err);
-      setError(err.message || 'Failed to add transaction');
+      setError(err.message || `Failed to ${transaction ? 'update' : 'add'} transaction`);
       setIsSubmitting(false);
     }
   };
@@ -120,13 +142,13 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
 
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-gray-700 text-white">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-medium text-gray-900">Add Transaction</h3>
+          <h3 className="text-lg font-medium text-white">{transaction ? 'Edit Transaction' : 'Add Transaction'}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-500"
+            className="text-gray-300 hover:text-white"
           >
             ×
           </button>
@@ -142,7 +164,7 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
                 onChange={() => handleInputChange('type', 'expense')}
                 className="mr-2"
               />
-              <span>Expense</span>
+              <span className="text-white">Expense</span>
             </label>
             <label className="flex items-center">
               <input
@@ -151,16 +173,16 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
                 onChange={() => handleInputChange('type', 'income')}
                 className="mr-2"
               />
-              <span>Income</span>
+              <span className="text-white">Income</span>
             </label>
           </div>
 
           {/* Date */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-1">Tags (comma separated)</label>
+            <label className="block text-sm font-medium text-gray-100 mb-1">Tags (comma separated)</label>
             <input
               type="text"
-              className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-500"
               placeholder="e.g., groceries, monthly, essential"
               value={formData.tags?.join(', ') || ''}
               onChange={(e) => {
@@ -172,47 +194,47 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
 
           {/* Date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-100 mb-1">
               Date
             </label>
             <input
               type="date"
               value={formData.date}
               onChange={(e) => handleInputChange('date', e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full rounded-md border-gray-500 bg-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               required
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-100 mb-1">
               Description
             </label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full rounded-md border-gray-500 bg-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               required
             />
           </div>
 
           {/* Amount */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-100 mb-1">
               Amount
             </label>
             <div className="relative rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-500 sm:text-sm">$</span>
+                <span className="text-gray-300 sm:text-sm">$</span>
               </div>
               <input
                 type="number"
                 step="0.01"
                 value={formData.amount}
                 onChange={(e) => handleStringNumberInputChange(e.target.value, (value) => handleInputChange('amount', value))}
-                className="block w-full pl-7 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full pl-7 rounded-md border-gray-500 bg-gray-600 text-white focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 required
               />
             </div>
@@ -220,13 +242,13 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-100 mb-1">
               Category
             </label>
             <select
               value={formData.category}
               onChange={(e) => handleInputChange('category', e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+              className="block w-full rounded-md border-gray-500 bg-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               required
             >
               <option value="">Select a category</option>
@@ -240,9 +262,9 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
 
           {/* Account */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-1">Account</label>
+            <label className="block text-sm font-medium text-gray-100 mb-1">Account</label>
             <select
-              className="w-full px-3 py-2 bg-gray-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={formData.accountId}
               onChange={(e) => handleInputChange('accountId', e.target.value)}
             >
@@ -261,21 +283,21 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
                 type="checkbox"
                 checked={formData.isRecurring}
                 onChange={(e) => handleInputChange('isRecurring', e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="rounded border-gray-500 bg-gray-600 text-blue-600 focus:ring-blue-500"
               />
-              <span className="ml-2 text-sm text-gray-700">Recurring Transaction</span>
+              <span className="ml-2 text-sm text-gray-100">Recurring Transaction</span>
             </label>
           </div>
 
           {formData.isRecurring && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-100 mb-1">
                 Frequency
               </label>
               <select
                 value={formData.recurringFrequency}
                 onChange={(e) => handleInputChange('recurringFrequency', e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                className="block w-full rounded-md border-gray-500 bg-gray-600 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 required
               >
                 <option value="">Select frequency</option>
@@ -295,7 +317,7 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
           <div className="flex justify-end mt-6 space-x-3">
             <button
               type="button"
-              className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600"
+              className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 border border-gray-600"
               onClick={onClose}
               disabled={isSubmitting}
             >
@@ -303,16 +325,16 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 flex items-center justify-center"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
                   <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></span>
-                  Processing...
+                  {transaction ? 'Updating...' : 'Adding...'}
                 </>
               ) : (
-                'Add Transaction'
+                transaction ? 'Update Transaction' : 'Add Transaction'
               )}
             </button>
           </div>

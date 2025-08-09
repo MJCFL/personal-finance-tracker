@@ -46,6 +46,8 @@ const InvestmentAccountList: React.FC<InvestmentAccountListProps> = ({
     return stocksValue + (account.cash || 0);
   };
 
+  // No delete handler needed anymore
+
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       <ul className="divide-y divide-gray-200">

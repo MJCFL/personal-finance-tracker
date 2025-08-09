@@ -42,10 +42,12 @@ export async function GET(
     }
 
     // Find the budget by ID and user ID
+    console.log('API route PUT: Looking for budget with ID:', id, 'and userId:', user.id);
     const budget = await Budget.findOne({
       _id: id,
       userId: user.id,
     });
+    console.log('API route PUT: Budget found?', !!budget);
 
     // If budget not found or doesn't belong to the user
     if (!budget) {
@@ -115,10 +117,12 @@ export async function PUT(
     const body = await req.json();
 
     // Find the budget by ID and user ID
+    console.log('API route PUT: Looking for budget with ID:', id, 'and userId:', user.id);
     const budget = await Budget.findOne({
       _id: id,
       userId: user.id,
     });
+    console.log('API route PUT: Budget found?', !!budget);
 
     // If budget not found or doesn't belong to the user
     if (!budget) {
@@ -130,11 +134,32 @@ export async function PUT(
 
     // Update the budget with the new data
     // Note: We don't allow changing the userId
-    const updatedBudget = await Budget.findByIdAndUpdate(
-      id,
-      { ...body, userId: user.id },
-      { new: true, runValidators: true }
-    );
+    console.log('API route PUT: Attempting to update budget with ID:', id);
+    
+    let updatedBudget;
+    try {
+      updatedBudget = await Budget.findByIdAndUpdate(
+        id,
+        { ...body, userId: user.id },
+        { new: true, runValidators: true }
+      );
+      
+      if (!updatedBudget) {
+        console.error('API route PUT: Budget update failed - no document returned');
+        return NextResponse.json(
+          { error: 'Failed to update budget' },
+          { status: 500 }
+        );
+      }
+      
+      console.log('API route PUT: Budget updated successfully');
+    } catch (updateError) {
+      console.error('API route PUT: Error during findByIdAndUpdate:', updateError);
+      return NextResponse.json(
+        { error: 'Failed to update budget: ' + (updateError as Error).message },
+        { status: 500 }
+      );
+    }
 
     // Format the response
     const formattedBudget = {
@@ -207,10 +232,12 @@ export async function DELETE(
     }
 
     // Find the budget by ID and user ID
+    console.log('API route PUT: Looking for budget with ID:', id, 'and userId:', user.id);
     const budget = await Budget.findOne({
       _id: id,
       userId: user.id,
     });
+    console.log('API route PUT: Budget found?', !!budget);
 
     // If budget not found or doesn't belong to the user
     if (!budget) {

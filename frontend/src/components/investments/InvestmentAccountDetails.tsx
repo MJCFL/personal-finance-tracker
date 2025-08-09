@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { InvestmentAccountData, updateInvestmentAccount } from '@/services/investmentService';
+import { InvestmentAccountData, updateInvestmentAccount, deleteInvestmentAccount } from '@/services/investmentService';
+import { toast } from 'react-hot-toast';
 import { InvestmentAccountType, IStock } from '@/types/investment';
 import StockList from './StockList';
 import AddStockModal from './AddStockModal';
@@ -11,11 +12,13 @@ import CashManagement from './CashManagement';
 interface InvestmentAccountDetailsProps {
   account: InvestmentAccountData;
   onAccountUpdated: () => void;
+  onAccountDeleted?: () => void;
 }
 
 const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
   account,
   onAccountUpdated,
+  onAccountDeleted,
 }) => {
   const [activeTab, setActiveTab] = useState<'stocks' | 'transactions' | 'cash'>('stocks');
   const [isAddStockModalOpen, setIsAddStockModalOpen] = useState(false);
@@ -77,6 +80,24 @@ const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
     setEditedInstitution(account.institution);
     setEditedType(account.type);
     setIsEditing(false);
+  };
+
+  // Handle delete account
+  const handleDeleteAccount = async () => {
+    if (!account.id) return;
+    
+    if (window.confirm(`Are you sure you want to delete this investment account? This action cannot be undone.`)) {
+      try {
+        await deleteInvestmentAccount(account.id);
+        toast.success('Investment account deleted successfully');
+        if (onAccountDeleted) {
+          onAccountDeleted();
+        }
+      } catch (error) {
+        console.error('Error deleting investment account:', error);
+        toast.error('Failed to delete investment account');
+      }
+    }
   };
 
   const handleStockAdded = () => {
@@ -164,12 +185,20 @@ const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
             Total Value
           </div>
           {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="mt-2 text-blue-500 hover:text-blue-700 text-sm"
-            >
-              Edit Account
-            </button>
+            <div className="flex flex-col items-end space-y-2">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-blue-500 hover:text-blue-700 text-sm"
+              >
+                Edit Account
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                className="text-red-500 hover:text-red-700 text-sm"
+              >
+                Delete Account
+              </button>
+            </div>
           )}
         </div>
       </div>

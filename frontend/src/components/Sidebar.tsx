@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '@/hooks/useTheme';
 import { useSession, signIn, signOut } from 'next-auth/react';
 import { HomeIcon, BanknotesIcon, ChartBarIcon, WalletIcon, Cog6ToothIcon, UserIcon, PresentationChartLineIcon, CreditCardIcon, CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { FaPiggyBank } from 'react-icons/fa';
 import HelpButton from './onboarding/HelpButton';
 import { useFinancial } from '@/contexts/FinancialContext';
 import ThemeToggle from './ThemeToggle';
@@ -20,12 +21,12 @@ export default function Sidebar() {
     { name: 'Dashboard', href: '/', icon: HomeIcon },
     { name: 'Accounts', href: '/accounts', icon: BanknotesIcon },
     { name: 'Transactions', href: '/transactions', icon: BanknotesIcon },
+    { name: 'Budgets', href: '/budgets', icon: WalletIcon },
     { name: 'Assets', href: '/assets', icon: ChartBarIcon },
     { name: 'Investments', href: '/investments', icon: CurrencyDollarIcon },
     { name: 'Debts', href: '/debts', icon: CreditCardIcon },
-    { name: 'Analytics', href: '/analytics', icon: PresentationChartLineIcon },
-    { name: 'Budgets', href: '/budgets', icon: WalletIcon },
-    { name: 'Insights', href: '/insights', icon: WalletIcon },
+    { name: 'Savings', href: '/savings', icon: FaPiggyBank },
+    { name: 'Insights', href: '/insights', icon: PresentationChartLineIcon },
     { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
   ];
 

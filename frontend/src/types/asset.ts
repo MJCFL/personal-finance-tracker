@@ -1,10 +1,10 @@
-export type AssetCategory = 'real_estate' | 'watches' | 'vehicles' | 'art' | 'jewelry' | 'other';
+export type AssetCategory = 'Real Estate' | 'Watches' | 'Vehicles' | 'Art' | 'Jewelry' | 'Other';
 
 export enum AssetType {
-  REAL_ESTATE = 'real_estate',
-  CASH = 'cash',
-  CRYPTO = 'crypto',
-  OTHER = 'other',
+  REAL_ESTATE = 'Real Estate',
+  CASH = 'Cash',
+  CRYPTO = 'Crypto',
+  OTHER = 'Other',
 }
 
 export interface Asset {
@@ -22,10 +22,10 @@ export interface Asset {
 
 
 export const ASSET_CATEGORIES: { value: AssetCategory; label: string }[] = [
-  { value: 'real_estate', label: 'Real Estate' },
-  { value: 'watches', label: 'Watches' },
-  { value: 'vehicles', label: 'Vehicles' },
-  { value: 'art', label: 'Art' },
-  { value: 'jewelry', label: 'Jewelry' },
-  { value: 'other', label: 'Other' },
+  { value: 'Real Estate', label: 'Real Estate' },
+  { value: 'Watches', label: 'Watches' },
+  { value: 'Vehicles', label: 'Vehicles' },
+  { value: 'Art', label: 'Art' },
+  { value: 'Jewelry', label: 'Jewelry' },
+  { value: 'Other', label: 'Other' },
 ];

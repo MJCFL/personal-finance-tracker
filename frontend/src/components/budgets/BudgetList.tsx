@@ -5,6 +5,7 @@ import { Budget, BudgetCategory, BUDGET_CATEGORIES } from '@/types/budget';
 import { getBudgets, deleteBudget } from '@/services/budgetService';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import SuccessMessage from '@/components/ui/SuccessMessage';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 interface BudgetListProps {
   onEditBudget: (budget: Budget) => void;
@@ -21,16 +22,30 @@ const BudgetList: React.FC<BudgetListProps> = ({ onEditBudget, onCreateBudget })
   // Fetch budgets on component mount
   useEffect(() => {
     fetchBudgets();
+    
+    // Subscribe to financial data change events
+    const unsubscribe = eventEmitter.on(FINANCIAL_DATA_CHANGED, () => {
+      console.log('FINANCIAL_DATA_CHANGED event received in BudgetList');
+      fetchBudgets();
+    });
+    
+    // Cleanup subscription when component unmounts
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Function to fetch budgets
   const fetchBudgets = async () => {
+    console.log('BudgetList: fetchBudgets called');
     setLoading(true);
     setError(null);
     try {
       const data = await getBudgets();
+      console.log('BudgetList: Fetched budgets data:', data);
       setBudgets(data);
     } catch (err: any) {
+      console.error('BudgetList: Error fetching budgets:', err);
       setError(err.message || 'Failed to fetch budgets');
     } finally {
       setLoading(false);
@@ -140,7 +155,16 @@ const BudgetList: React.FC<BudgetListProps> = ({ onEditBudget, onCreateBudget })
                 </div>
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => onEditBudget(budget)}
+                    onClick={() => {
+                      console.log('BudgetList: Edit button clicked for budget:', budget);
+                      // Create a clean copy of the budget with proper ID formatting
+                      const budgetCopy = {
+                        ...budget,
+                        id: budget.id.toString()
+                      };
+                      console.log('BudgetList: Passing cleaned budget copy to edit:', budgetCopy);
+                      onEditBudget(budgetCopy);
+                    }}
                     className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-full transition"
                     title="Edit"
                   >

@@ -104,41 +104,41 @@ export default function BudgetPreviewCard() {
     fetchBudgetData();
   }, []);
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Budget Overview</h3>
-        <button className="text-sm text-blue-600 hover:text-blue-700">View All</button>
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-base font-semibold text-gray-900">Budget Overview</h3>
+        <button className="text-xs text-blue-600 hover:text-blue-700">View All</button>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-gray-500">Loading budget data...</p>
+        <div className="flex items-center justify-center h-28">
+          <p className="text-xs text-gray-500">Loading budget data...</p>
         </div>
       ) : error ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-red-500">{error}</p>
+        <div className="flex items-center justify-center h-28">
+          <p className="text-xs text-red-500">{error}</p>
         </div>
       ) : budgetData.length === 0 ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-gray-500">No budget data available</p>
+        <div className="flex items-center justify-center h-28">
+          <p className="text-xs text-gray-500">No budget data available</p>
         </div>
       ) : (
-      <div className="space-y-4">
+      <div className="space-y-2">
         {budgetData.map((category) => {
           const percentage = (category.spent / category.budget) * 100;
           const isOverBudget = percentage > 100;
           const warningLevel = percentage >= 90 ? 'bg-red-100' : percentage >= 75 ? 'bg-yellow-100' : 'bg-gray-100';
           
           return (
-            <div key={category.category} className="space-y-2">
-              <div className="flex justify-between text-sm">
+            <div key={category.category} className="space-y-1">
+              <div className="flex justify-between text-xs">
                 <span className="font-medium text-gray-700">{category.category}</span>
                 <span className={`font-medium ${isOverBudget ? 'text-red-600' : 'text-gray-600'}`}>
                   ${category.spent.toLocaleString()} / ${category.budget.toLocaleString()}
                 </span>
               </div>
               
-              <div className={`w-full h-2 rounded-full ${warningLevel}`}>
+              <div className={`w-full h-1.5 rounded-full ${warningLevel}`}>
                 <div
                   className={`h-full rounded-full ${category.color}`}
                   style={{ width: `${Math.min(percentage, 100)}%` }}

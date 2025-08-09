@@ -28,5 +28,6 @@ const eventEmitter = new EventEmitter();
 
 // Define event types
 export const FINANCIAL_DATA_CHANGED = 'FINANCIAL_DATA_CHANGED';
+export const TRANSACTION_CHANGED = 'TRANSACTION_CHANGED';
 
 export default eventEmitter;

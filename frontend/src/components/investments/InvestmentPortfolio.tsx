@@ -88,6 +88,7 @@ const InvestmentPortfolio: React.FC = () => {
             accounts={accounts} 
             selectedAccountId={selectedAccount?.id}
             onSelectAccount={handleSelectAccount}
+            onAccountsChanged={fetchAccounts}
           />
         )}
       </div>
@@ -97,6 +98,10 @@ const InvestmentPortfolio: React.FC = () => {
           <InvestmentAccountDetails 
             account={selectedAccount} 
             onAccountUpdated={handleAccountUpdated}
+            onAccountDeleted={() => {
+              setSelectedAccount(null);
+              fetchAccounts();
+            }}
           />
         ) : (
           <div className="bg-gray-100 p-8 rounded-md text-center h-full flex flex-col justify-center">

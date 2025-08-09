@@ -1,34 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AccountData, createAccount, updateAccount } from '@/services/accountService';
-import { AccountType } from '@/types/account';
+import { AccountType, Account } from '@/types/account';
 import { handleNumberInputChange } from '@/utils/inputHelpers';
+import SavingsBuckets from './SavingsBuckets';
 
 interface AccountFormProps {
-  account: AccountData | null;
-  onSave: () => void;
-  onCancel: () => void;
+  initialData?: AccountData | null;
+  onSave: (account: AccountData) => void;
+  onCancel?: () => void;
+  isEdit?: boolean;
+  showBucketsManagement?: boolean;
 }
 
-const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) => {
+const AccountForm: React.FC<AccountFormProps> = ({ initialData, onSave, onCancel, isEdit = false, showBucketsManagement = false }) => {
+  // Debug: Log the initialData being received
+  console.log('AccountForm initialData:', initialData);
+  
+  // Determine if we're in edit mode based on props and initialData
+  const isEditMode = isEdit || (initialData && initialData.id) ? true : false;
+  console.log('isEditMode:', isEditMode);
+  
+  // Initialize form data with empty values first
   const [formData, setFormData] = useState<Partial<AccountData> & { balanceInput?: string; interestRateInput?: string; minimumPaymentInput?: string; }>({
-    name: account?.name || '',
-    type: account?.type || AccountType.CHECKING,
-    balance: account?.balance || 0,
-    institution: account?.institution || '',
-    accountNumber: account?.accountNumber || '',
-    isActive: account?.isActive !== undefined ? account.isActive : true,
-    notes: account?.notes || '',
-    interestRate: account?.interestRate !== undefined ? account.interestRate : 0,
-    minimumPayment: account?.minimumPayment || undefined,
-    balanceInput: account?.balance ? account.balance.toString() : '',
-    interestRateInput: account?.interestRate !== undefined ? account.interestRate.toString() : '0',
-    minimumPaymentInput: account?.minimumPayment ? account.minimumPayment.toString() : '',
+    name: initialData?.name || '',
+    type: initialData?.type || AccountType.CHECKING,
+    balance: initialData?.balance || 0,
+    institution: initialData?.institution || '',
+    accountNumber: initialData?.accountNumber || '',
+    isActive: initialData?.isActive !== undefined ? initialData.isActive : true,
+    notes: initialData?.notes || '',
+    interestRate: initialData?.interestRate !== undefined ? initialData.interestRate : 0,
+    minimumPayment: initialData?.minimumPayment || undefined,
+    balanceInput: initialData?.balance ? initialData.balance.toString() : '',
+    interestRateInput: initialData?.interestRate !== undefined ? initialData.interestRate.toString() : '0',
+    minimumPaymentInput: initialData?.minimumPayment ? initialData.minimumPayment.toString() : '',
   });
   
   // Separate state for balance input to preserve string format during typing
   const [balanceInput, setBalanceInput] = useState<string>(
-    account?.balance ? account.balance.toString() : ''
+    initialData?.balance !== undefined ? initialData.balance.toString() : ''
   );
+  
+  // Use a ref to track if this is the first render
+  const isFirstRender = React.useRef(true);
+
+  // Add useEffect to update form data when initialData changes
+  useEffect(() => {
+    // Only update if we have initialData and either:
+    // 1. It's the first render, or
+    // 2. The initialData has changed
+    if (initialData && initialData.id) {
+      console.log('Updating form data from initialData:', initialData);
+      
+      // Update form data with initialData values
+      setFormData({
+        name: initialData.name || '',
+        type: initialData.type || AccountType.CHECKING,
+        balance: initialData.balance || 0,
+        institution: initialData.institution || '',
+        accountNumber: initialData.accountNumber || '',
+        isActive: initialData.isActive !== undefined ? initialData.isActive : true,
+        notes: initialData.notes || '',
+        interestRate: initialData.interestRate !== undefined ? initialData.interestRate : 0,
+        minimumPayment: initialData.minimumPayment || undefined,
+        balanceInput: initialData.balance !== undefined ? initialData.balance.toString() : '',
+        interestRateInput: initialData.interestRate !== undefined ? initialData.interestRate.toString() : '0',
+        minimumPaymentInput: initialData.minimumPayment ? initialData.minimumPayment.toString() : '',
+        buckets: initialData.buckets || [],
+      });
+      
+      // Update balance input separately
+      if (initialData.balance !== undefined) {
+        setBalanceInput(initialData.balance.toString());
+      }
+    }
+    
+    // Mark that we've done the first render
+    isFirstRender.current = false;
+  }, [initialData]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -145,15 +194,17 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
       // Log the clean account data for debugging
       console.log('Clean account data for submission:', accountData);
       
-      if (account?.id) {
+      let savedAccount;
+      if (initialData?.id) {
         // Update existing account
-        await updateAccount(account.id, accountData as AccountData);
+        savedAccount = await updateAccount(initialData.id, accountData as AccountData);
       } else {
         // Create new account
-        await createAccount(accountData as AccountData);
+        savedAccount = await createAccount(accountData as AccountData);
       }
       
-      onSave();
+      // Use handleSaveComplete instead of directly calling onSave
+      handleSaveComplete(savedAccount);
     } catch (error: any) {
       console.error('Error saving account:', error);
       setErrors(prev => ({ ...prev, form: error.message || 'Failed to save account' }));
@@ -162,8 +213,48 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
     }
   };
 
+  const [showBuckets, setShowBuckets] = useState(false);
+  const [savedAccount, setSavedAccount] = useState<Account | null>(null);
+
+  // Show buckets UI after account is saved if it's a savings account
+  const handleSaveComplete = async (savedAcc: AccountData) => {
+    // Convert AccountData to Account by adding required fields
+    const fullAccount: Account = {
+      ...savedAcc,
+      id: savedAcc.id || '',
+      userId: savedAcc.userId || '',
+      buckets: savedAcc.buckets || []
+    };
+    
+    setSavedAccount(fullAccount);
+    if (fullAccount.type === AccountType.SAVINGS) {
+      setShowBuckets(true);
+    } else {
+      onSave(fullAccount);
+    }
+  };
+
+  // Handle bucket updates
+  const handleBucketUpdate = (updatedAccount: Account) => {
+    setSavedAccount(updatedAccount);
+  };
+
+  // Handle completion of bucket setup
+  const handleBucketsDone = () => {
+    if (savedAccount) {
+      onSave(savedAccount);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div>
+      {isEditMode && (
+        <div className="mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">Edit Account</h2>
+        </div>
+      )}
+      {!showBuckets ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
       {/* General error message */}
       {errors.form && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -429,10 +520,32 @@ const AccountForm: React.FC<AccountFormProps> = ({ account, onSave, onCancel }) 
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           disabled={isSubmitting}
         >
-          {isSubmitting ? 'Saving...' : account?.id ? 'Update Account' : 'Create Account'}
+          {isSubmitting ? 'Saving...' : (isEdit || (initialData && initialData.id)) ? 'Update Account' : 'Create Account'}
         </button>
       </div>
     </form>
+      ) : (
+        <div className="space-y-4">
+          {savedAccount && (
+            <>
+              <SavingsBuckets 
+                account={savedAccount} 
+                onUpdate={handleBucketUpdate} 
+              />
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleBucketsDone}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Done
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
