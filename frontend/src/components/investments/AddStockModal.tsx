@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { IStock } from '@/models/InvestmentAccount';
+import { IStock, IStockLot } from '@/models/InvestmentAccount';
 import { addStock, searchStocks, getStockPrice } from '@/services/investmentService';
+import { v4 as uuidv4 } from 'uuid';
 import Modal from '../ui/Modal';
 import { handleNumberInputChange, handleStringNumberInputChange } from '@/utils/inputHelpers';
 
@@ -27,7 +28,9 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
   const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
   const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
   const [shares, setShares] = useState('');
-  const [avgBuyPrice, setAvgBuyPrice] = useState('');
+  const [purchasePrice, setPurchasePrice] = useState('');
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [notes, setNotes] = useState('');
   const [currentPrice, setCurrentPrice] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isFetchingPrice, setIsFetchingPrice] = useState(false);
@@ -85,6 +88,24 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
     const priceNum = parseFloat(currentPrice) || 0;
     return sharesNum * priceNum;
   };
+  
+  // Calculate cost basis
+  const calculateCostBasis = (): number => {
+    const sharesNum = parseFloat(shares) || 0;
+    const priceNum = parseFloat(purchasePrice) || 0;
+    return sharesNum * priceNum;
+  };
+  
+  // Calculate potential gain/loss
+  const calculateGainLoss = (): number => {
+    return calculateTotalValue() - calculateCostBasis();
+  };
+  
+  // Calculate potential gain/loss percentage
+  const calculateGainLossPercentage = (): number => {
+    const costBasis = calculateCostBasis();
+    return costBasis > 0 ? (calculateGainLoss() / costBasis) * 100 : 0;
+  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,9 +125,13 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
         throw new Error('Please enter a valid number of shares');
       }
       
-      const avgBuyPriceNum = parseFloat(avgBuyPrice);
-      if (isNaN(avgBuyPriceNum) || avgBuyPriceNum <= 0) {
-        throw new Error('Please enter a valid average buy price');
+      const purchasePriceNum = parseFloat(purchasePrice);
+      if (isNaN(purchasePriceNum) || purchasePriceNum <= 0) {
+        throw new Error('Please enter a valid purchase price');
+      }
+      
+      if (!purchaseDate) {
+        throw new Error('Please enter a purchase date');
       }
       
       const currentPriceNum = parseFloat(currentPrice);
@@ -114,12 +139,21 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
         throw new Error('Please enter a valid current price');
       }
       
+      // Create stock lot
+      const stockLot: IStockLot = {
+        id: uuidv4(),
+        ticker: selectedStock.ticker,
+        shares: sharesNum,
+        purchasePrice: purchasePriceNum,
+        purchaseDate: new Date(purchaseDate),
+        notes: notes || undefined,
+      };
+      
       // Create stock object
       const stockData: IStock = {
         ticker: selectedStock.ticker,
         companyName: selectedStock.name,
-        shares: sharesNum,
-        avgBuyPrice: avgBuyPriceNum,
+        lots: [stockLot],
         currentPrice: currentPriceNum,
         lastUpdated: new Date(),
       };
@@ -227,18 +261,45 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
             </div>
             
             <div>
-              <label htmlFor="avgBuyPrice" className="block text-sm font-medium text-gray-700">
-                Average Buy Price ($)
+              <label htmlFor="purchasePrice" className="block text-sm font-medium text-gray-700">
+                Purchase Price ($)
               </label>
               <input
                 type="number"
-                id="avgBuyPrice"
-                value={avgBuyPrice}
-                onChange={(e) => handleStringNumberInputChange(e.target.value, setAvgBuyPrice)}
+                id="purchasePrice"
+                value={purchasePrice}
+                onChange={(e) => handleStringNumberInputChange(e.target.value, setPurchasePrice)}
                 min="0.01"
                 step="0.01"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="purchaseDate" className="block text-sm font-medium text-gray-700">
+                Purchase Date
+              </label>
+              <input
+                type="date"
+                id="purchaseDate"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                Notes (Optional)
+              </label>
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                rows={2}
               />
             </div>
             
@@ -265,11 +326,24 @@ const AddStockModal: React.FC<AddStockModalProps> = ({
               </div>
             </div>
             
-            <div className="bg-white p-4 rounded-md border border-gray-200">
+            <div className="bg-white p-4 rounded-md border border-gray-200 space-y-2">
               <div className="flex justify-between items-center">
-                <div className="text-sm font-medium text-gray-700">Total Value:</div>
-                <div className="text-lg font-semibold text-gray-900">
+                <div className="text-sm font-medium text-gray-700">Cost Basis:</div>
+                <div className="text-md font-semibold text-gray-900">
+                  ${calculateCostBasis().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="text-sm font-medium text-gray-700">Current Value:</div>
+                <div className="text-md font-semibold text-gray-900">
                   ${calculateTotalValue().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="text-sm font-medium text-gray-700">Potential Gain/Loss:</div>
+                <div className={`text-md font-semibold ${calculateGainLoss() >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${calculateGainLoss().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  <span className="ml-1 text-sm">({calculateGainLossPercentage().toFixed(2)}%)</span>
                 </div>
               </div>
             </div>

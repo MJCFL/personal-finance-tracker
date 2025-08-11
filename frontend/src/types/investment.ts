@@ -17,13 +17,24 @@ export enum InvestmentAccountType {
   OTHER = 'Other',
 }
 
+export interface IStockLot {
+  id: string;
+  ticker: string;
+  shares: number;
+  purchasePrice: number;
+  purchaseDate: Date;
+  notes?: string;
+}
+
 export interface IStock {
   ticker: string;
   companyName: string;
-  shares: number;
-  avgBuyPrice: number;
+  lots: IStockLot[];
   currentPrice: number;
   lastUpdated: Date;
+  // Calculated fields
+  totalShares?: number;
+  avgBuyPrice?: number;
 }
 
 export interface ITransaction {

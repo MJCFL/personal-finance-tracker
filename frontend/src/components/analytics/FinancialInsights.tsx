@@ -3,39 +3,81 @@
 import React, { useEffect, useState } from 'react';
 import { Asset, AssetType, AssetCategory, ASSET_CATEGORIES } from '@/types/asset';
 import { getAssets } from '@/services/assetService';
+import { getRecommendations } from '@/services/insightsService';
+import { getAccounts } from '@/services/accountService';
 
 interface Insight {
   title: string;
   description: string;
   type: 'info' | 'warning' | 'success';
   icon: string;
+  category?: string;
+}
+
+interface Recommendation {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  potentialSavings: number;
+  priority: 'high' | 'medium' | 'low';
+  category: string;
 }
 
 export default function FinancialInsights() {
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchAssets = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const fetchedAssets = await getAssets();
+        
+        // Fetch assets and accounts in parallel
+        const [fetchedAssets, fetchedAccounts] = await Promise.all([
+          getAssets(),
+          getAccounts()
+        ]);
+        
         setAssets(fetchedAssets);
+        setAccounts(fetchedAccounts);
         
         // Generate insights based on assets
         const generatedInsights = generateInsights(fetchedAssets);
-        setInsights(generatedInsights);
+        
+        // Get recommendations from the insights service
+        const fetchedRecommendations = await getRecommendations();
+        
+        // Convert recommendations to insights format for savings goals
+        const savingsInsights = fetchedRecommendations
+          .filter(rec => rec.category.toLowerCase() === 'savings')
+          .map(rec => ({
+            title: rec.title,
+            description: rec.description,
+            type: rec.priority === 'high' ? 'warning' as const : 
+                  rec.priority === 'medium' ? 'info' as const : 'success' as const,
+            icon: rec.type === 'achievement' ? '🏆' : 
+                 rec.type === 'goal' ? '🎯' : 
+                 rec.type === 'warning' ? '⚠️' : '💡',
+            category: 'savings'
+          }));
+        
+        // Combine asset insights with savings insights
+        setInsights([...generatedInsights, ...savingsInsights]);
+        setRecommendations(fetchedRecommendations);
       } catch (err) {
-        console.error('Failed to fetch assets for insights:', err);
+        console.error('Failed to fetch data for insights:', err);
         setError('Failed to load financial insights');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAssets();
+    fetchData();
   }, []);
 
   const generateInsights = (assets: Asset[]): Insight[] => {
@@ -120,7 +162,7 @@ export default function FinancialInsights() {
     }
     
     // Insight 3: Portfolio Growth
-    const stockAssets = assets.filter(asset => asset.category === 'stocks');
+    const stockAssets = assets.filter(asset => asset.type === AssetType.CRYPTO || asset.category === 'Stocks' as AssetCategory);
     if (stockAssets.length > 0) {
       const growingStocks = stockAssets.filter(asset => {
         // For this example, we'll consider a stock as growing if its current value is higher than its purchase price
@@ -199,6 +241,27 @@ export default function FinancialInsights() {
     return insights;
   };
 
+  // Group insights by category for better organization
+  const groupedInsights = insights.reduce((groups, insight) => {
+    const category = insight.category || 'general';
+    if (!groups[category]) {
+      groups[category] = [];
+    }
+    groups[category].push(insight);
+    return groups;
+  }, {} as Record<string, Insight[]>);
+
+  // Order categories for display
+  const categoryOrder = ['savings', 'general'];
+  
+  // Get category display names
+  const getCategoryDisplayName = (category: string): string => {
+    switch(category.toLowerCase()) {
+      case 'savings': return 'Savings Goals';
+      default: return 'General Insights';
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-gray-900 rounded-lg shadow-lg p-6 h-64 flex items-center justify-center">
@@ -222,23 +285,37 @@ export default function FinancialInsights() {
       {insights.length === 0 ? (
         <p className="text-gray-400">Add more assets to receive personalized financial insights.</p>
       ) : (
-        <div className="space-y-4">
-          {insights.map((insight, index) => (
-            <div 
-              key={index} 
-              className={`p-4 rounded-lg flex items-start gap-3 ${
-                insight.type === 'warning' ? 'bg-amber-900/30 border border-amber-700/50' :
-                insight.type === 'success' ? 'bg-green-900/30 border border-green-700/50' :
-                'bg-blue-900/30 border border-blue-700/50'
-              }`}
-            >
-              <div className="text-2xl">{insight.icon}</div>
-              <div>
-                <h3 className="font-medium text-white">{insight.title}</h3>
-                <p className="text-sm text-gray-300">{insight.description}</p>
+        <div className="space-y-6">
+          {/* Display insights by category */}
+          {categoryOrder.map(categoryKey => {
+            const categoryInsights = groupedInsights[categoryKey] || [];
+            if (categoryInsights.length === 0) return null;
+            
+            return (
+              <div key={categoryKey} className="space-y-4">
+                <h3 className="text-lg font-semibold border-b border-gray-700 pb-2 text-gray-300">
+                  {getCategoryDisplayName(categoryKey)}
+                </h3>
+                
+                {categoryInsights.map((insight, index) => (
+                  <div 
+                    key={`${insight.title}-${index}`} 
+                    className={`p-4 rounded-lg flex items-start gap-3 ${
+                      insight.type === 'warning' ? 'bg-amber-900/30 border border-amber-700/50' : 
+                      insight.type === 'success' ? 'bg-green-900/30 border border-green-700/50' : 
+                      'bg-blue-900/30 border border-blue-700/50'
+                    }`}
+                  >
+                    <div className="text-2xl">{insight.icon}</div>
+                    <div>
+                      <h3 className="font-medium text-white">{insight.title}</h3>
+                      <p className="text-sm text-gray-300">{insight.description}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

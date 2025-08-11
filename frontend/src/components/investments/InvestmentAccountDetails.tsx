@@ -52,7 +52,11 @@ const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
   // Calculate total value of the account
   const calculateTotalValue = (): number => {
     const stocksValue = account.stocks?.reduce((total, stock) => {
-      return total + (stock.shares * stock.currentPrice);
+      // Use totalShares if available, otherwise calculate from lots
+      const totalShares = stock.totalShares !== undefined 
+        ? stock.totalShares 
+        : stock.lots?.reduce((sum, lot) => sum + lot.shares, 0) || 0;
+      return total + (totalShares * stock.currentPrice);
     }, 0) || 0;
     
     return stocksValue + (account.cash || 0);

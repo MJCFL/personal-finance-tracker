@@ -5,6 +5,16 @@ import { getAssets } from './assetService';
 import { getAccounts } from './accountService';
 import { AccountType } from '@/types/account';
 
+// Utility function to format currency
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
 export interface FinancialSummary {
   totalBalance: number; // Cash in checking accounts only
   netWorth: number; // Total assets including investments, minus liabilities
@@ -273,15 +283,115 @@ export async function getRecommendations(): Promise<Recommendation[]> {
     const monthlyExpenses = (currentMonthExpenses + lastMonthExpenses) / 2;
     const recommendedEmergencyFund = monthlyExpenses * 6; // 6 months of expenses
     
-    if (liquidAssets < recommendedEmergencyFund) {
+    // Calculate emergency fund from savings buckets
+    let emergencyFund = 0;
+    let totalSavingsBuckets = 0;
+    let completedGoals = 0;
+    let totalGoals = 0;
+    
+    interface GoalProgress {
+      name: string;
+      progress: number;
+    }
+    
+    let nearCompletionGoals: GoalProgress[] = [];
+    
+    // Check for savings buckets and their goals
+    if (accounts && accounts.length > 0) {
+      accounts.forEach((account: any) => {
+        if (account.type === AccountType.SAVINGS && Array.isArray(account.buckets)) {
+          account.buckets.forEach((bucket: any) => {
+            // Track total in all savings buckets
+            totalSavingsBuckets += bucket.amount || 0;
+            
+            // Track emergency fund specifically
+            if (bucket.isEmergencyFund) {
+              emergencyFund += bucket.amount || 0;
+            }
+            
+            // Track goal progress
+            if (bucket.goal && bucket.goal > 0) {
+              totalGoals++;
+              const progressPercentage = (bucket.amount / bucket.goal) * 100;
+              
+              if (progressPercentage >= 100) {
+                completedGoals++;
+              } else if (progressPercentage >= 90) {
+                nearCompletionGoals.push({
+                  name: bucket.name,
+                  progress: progressPercentage
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+    
+    // Emergency fund recommendation based on actual emergency fund buckets
+    if (emergencyFund > 0) {
+      if (emergencyFund >= recommendedEmergencyFund) {
+        recommendations.push({
+          id: generateId(),
+          type: 'success',
+          title: 'Emergency Fund Complete',
+          description: `Congratulations! Your emergency fund of ${formatCurrency(emergencyFund)} meets or exceeds the recommended ${formatCurrency(recommendedEmergencyFund)} (6 months of expenses). You're well prepared for unexpected costs.`,
+          potentialSavings: 0,
+          priority: 'low',
+          category: 'Savings'
+        });
+      } else {
+        const shortfall = recommendedEmergencyFund - emergencyFund;
+        const percentComplete = (emergencyFund / recommendedEmergencyFund) * 100;
+        
+        recommendations.push({
+          id: generateId(),
+          type: 'saving',
+          title: 'Continue Building Emergency Fund',
+          description: `Your emergency fund is at ${percentComplete.toFixed(0)}% of the recommended target. Add ${formatCurrency(shortfall)} more to reach 6 months of expenses.`,
+          potentialSavings: 0,
+          priority: shortfall > monthlyExpenses * 3 ? 'high' : 'medium',
+          category: 'Savings'
+        });
+      }
+    } else if (liquidAssets < recommendedEmergencyFund) {
+      // Fall back to old logic if no explicit emergency fund buckets
       const shortfall = recommendedEmergencyFund - liquidAssets;
       recommendations.push({
         id: generateId(),
         type: 'saving',
         title: 'Build Emergency Fund',
         description: `Your emergency fund is below the recommended 6 months of expenses. Consider increasing your savings.`,
-        potentialSavings: 0, // This is not a direct saving
+        potentialSavings: 0,
         priority: shortfall > monthlyExpenses * 3 ? 'high' : 'medium',
+        category: 'Savings'
+      });
+    }
+    
+    // Add recommendations for savings goals that are near completion
+    if (nearCompletionGoals.length > 0) {
+      nearCompletionGoals.forEach(goal => {
+        recommendations.push({
+          id: generateId(),
+          type: 'saving',
+          title: `${goal.name} Almost Complete`,
+          description: `Your ${goal.name} savings goal is ${goal.progress.toFixed(0)}% complete! A little more effort will get you to the finish line.`,
+          potentialSavings: 0,
+          priority: 'medium',
+          category: 'Savings'
+        });
+      });
+    }
+    
+    // Add recommendation if user has completed multiple goals
+    if (completedGoals >= 2 && totalGoals >= 3) {
+      recommendations.push({
+        id: generateId(),
+        type: 'success',
+        title: 'Savings Goals Success',
+        description: `You've completed ${completedGoals} out of ${totalGoals} savings goals. Great job managing your financial goals!`,
+        potentialSavings: 0,
+        priority: 'low',
         category: 'Savings'
       });
     }
@@ -603,11 +713,17 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
         try {
           // Calculate stocks value
           const stocksValue = Array.isArray(account.stocks) ? account.stocks.reduce((stockTotal, stock) => {
-            if (!stock || typeof stock.shares !== 'number' || typeof stock.currentPrice !== 'number') {
+            if (!stock || !stock.currentPrice) {
               console.warn('Invalid stock data:', stock);
               return stockTotal;
             }
-            return stockTotal + (stock.shares * stock.currentPrice);
+            
+            // Calculate total shares from lots
+            const totalShares = Array.isArray(stock.lots) 
+              ? stock.lots.reduce((sum, lot) => sum + (lot.shares || 0), 0)
+              : 0;
+              
+            return stockTotal + (totalShares * stock.currentPrice);
           }, 0) : 0;
           
           // Add stocks value and cash

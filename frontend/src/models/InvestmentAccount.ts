@@ -19,13 +19,24 @@ export enum InvestmentAccountType {
   OTHER = 'Other',
 }
 
+export interface IStockLot {
+  id: string;
+  ticker: string;
+  shares: number;
+  purchasePrice: number;
+  purchaseDate: Date;
+  notes?: string;
+}
+
 export interface IStock {
   ticker: string;
   companyName: string;
-  shares: number;
-  avgBuyPrice: number;
+  lots: IStockLot[];
   currentPrice: number;
   lastUpdated: Date;
+  // Calculated fields
+  totalShares?: number;
+  avgBuyPrice?: number;
 }
 
 export interface ITransaction {
@@ -51,11 +62,19 @@ export interface IInvestmentAccount extends Document {
   updatedAt: Date;
 }
 
+const StockLotSchema = new Schema({
+  id: { type: String, required: true },
+  ticker: { type: String, required: true, uppercase: true },
+  shares: { type: Number, required: true, min: 0 },
+  purchasePrice: { type: Number, required: true, min: 0 },
+  purchaseDate: { type: Date, required: true, default: Date.now },
+  notes: { type: String },
+});
+
 const StockSchema = new Schema({
   ticker: { type: String, required: true, uppercase: true },
   companyName: { type: String, required: true },
-  shares: { type: Number, required: true, min: 0 },
-  avgBuyPrice: { type: Number, required: true, min: 0 },
+  lots: [StockLotSchema],
   currentPrice: { type: Number, required: true, min: 0 },
   lastUpdated: { type: Date, default: Date.now },
 });
@@ -88,10 +107,22 @@ const InvestmentAccountSchema = new Schema(
   { timestamps: true }
 );
 
+// Virtual for total shares and average buy price per stock
+StockSchema.virtual('totalShares').get(function() {
+  return this.lots.reduce((total, lot) => total + lot.shares, 0);
+});
+
+StockSchema.virtual('avgBuyPrice').get(function() {
+  const totalCost = this.lots.reduce((total, lot) => total + (lot.shares * lot.purchasePrice), 0);
+  const totalShares = this.lots.reduce((total, lot) => total + lot.shares, 0);
+  return totalShares > 0 ? totalCost / totalShares : 0;
+});
+
 // Virtual for total value (stocks + cash)
 InvestmentAccountSchema.virtual('totalValue').get(function(this: IInvestmentAccount) {
   const stocksValue = this.stocks.reduce((total, stock) => {
-    return total + (stock.shares * stock.currentPrice);
+    const totalShares = stock.lots.reduce((shares, lot) => shares + lot.shares, 0);
+    return total + (totalShares * stock.currentPrice);
   }, 0);
   
   return stocksValue + this.cash;

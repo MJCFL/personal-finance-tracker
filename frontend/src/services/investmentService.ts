@@ -160,7 +160,7 @@ export async function deleteInvestmentAccount(id: string): Promise<void> {
   }
 }
 
-// Add stock to investment account
+// Add stock to investment account with lot tracking
 export async function addStock(
   accountId: string, 
   stockData: IStock
@@ -307,16 +307,136 @@ export async function getStockPrice(ticker: string): Promise<number> {
   }
 }
 
-// Calculate new average buy price when adding more shares
-export function calculateNewAverageBuyPrice(
-  currentShares: number,
-  currentAvgPrice: number,
-  newShares: number,
-  newPrice: number
-): number {
-  const totalShares = currentShares + newShares;
-  const totalCost = (currentShares * currentAvgPrice) + (newShares * newPrice);
-  return totalCost / totalShares;
+// Add a new stock lot to an existing stock
+export async function addStockLot(
+  accountId: string,
+  ticker: string,
+  lotData: {
+    shares: number;
+    purchasePrice: number;
+    purchaseDate: Date;
+    notes?: string;
+  }
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/stocks/${ticker}/lots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(lotData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to add stock lot');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error adding stock lot:', error);
+    throw error;
+  }
+}
+
+// Update a stock lot
+export async function updateStockLot(
+  accountId: string,
+  ticker: string,
+  lotId: string,
+  lotData: Partial<{
+    shares: number;
+    purchasePrice: number;
+    purchaseDate: Date;
+    notes?: string;
+  }>
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/stocks/${ticker}/lots/${lotId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(lotData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update stock lot');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error updating stock lot:', error);
+    throw error;
+  }
+}
+
+// Remove a stock lot
+export async function removeStockLot(
+  accountId: string,
+  ticker: string,
+  lotId: string
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/stocks/${ticker}/lots/${lotId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to remove stock lot');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error removing stock lot:', error);
+    throw error;
+  }
+}
+
+// Get historical price data for a stock
+export async function getStockHistoricalData(
+  ticker: string,
+  startDate: Date,
+  endDate: Date = new Date()
+): Promise<{ date: Date; price: number }[]> {
+  try {
+    const response = await fetch(`/api/stocks/${ticker}/historical?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch historical data');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Error fetching historical data:', error);
+    throw error;
+  }
 }
 
 // Sell stock from investment account

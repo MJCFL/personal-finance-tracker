@@ -34,10 +34,18 @@ export async function GET(
     }
     
     // Convert to plain object and map _id to id
-    const plainAccount = account.toObject();
+    const plainAccount = account.toObject({ virtuals: true });
     plainAccount.id = plainAccount._id.toString();
     delete plainAccount._id;
     delete plainAccount.__v;
+    
+    // Calculate and set totalShares for each stock
+    if (plainAccount.stocks && plainAccount.stocks.length > 0) {
+      plainAccount.stocks = plainAccount.stocks.map((stock: any) => {
+        stock.totalShares = stock.lots.reduce((sum: number, lot: any) => sum + lot.shares, 0);
+        return stock;
+      });
+    }
     
     return NextResponse.json(plainAccount);
   } catch (error: any) {
@@ -80,10 +88,18 @@ export async function PUT(
     }
     
     // Convert to plain object and map _id to id
-    const plainAccount = updatedAccount.toObject();
+    const plainAccount = updatedAccount.toObject({ virtuals: true });
     plainAccount.id = plainAccount._id.toString();
     delete plainAccount._id;
     delete plainAccount.__v;
+    
+    // Calculate and set totalShares for each stock
+    if (plainAccount.stocks && plainAccount.stocks.length > 0) {
+      plainAccount.stocks = plainAccount.stocks.map((stock: any) => {
+        stock.totalShares = stock.lots.reduce((sum: number, lot: any) => sum + lot.shares, 0);
+        return stock;
+      });
+    }
     
     return NextResponse.json(plainAccount);
   } catch (error: any) {

@@ -42,18 +42,17 @@ export async function POST(
     );
     
     if (existingStockIndex !== -1) {
-      // Stock exists, calculate new average buy price
+      // Stock exists, add the new lots to the existing stock
       const existingStock = account.stocks[existingStockIndex];
-      const totalShares = existingStock.shares + stockData.shares;
-      const totalCost = (existingStock.shares * existingStock.avgBuyPrice) + 
-                       (stockData.shares * stockData.avgBuyPrice);
-      const newAvgPrice = totalCost / totalShares;
       
-      // Update existing stock
-      account.stocks[existingStockIndex].shares = totalShares;
-      account.stocks[existingStockIndex].avgBuyPrice = newAvgPrice;
-      account.stocks[existingStockIndex].currentPrice = stockData.currentPrice;
-      account.stocks[existingStockIndex].lastUpdated = new Date();
+      // Add the new lots to the existing stock's lots array
+      if (stockData.lots && stockData.lots.length > 0) {
+        existingStock.lots.push(...stockData.lots);
+      }
+      
+      // Update the current price and last updated timestamp
+      existingStock.currentPrice = stockData.currentPrice;
+      existingStock.lastUpdated = new Date();
     } else {
       // Add new stock to portfolio
       account.stocks.push({
@@ -63,24 +62,42 @@ export async function POST(
     }
     
     // Add transaction record
+    // Calculate total shares from lots
+    const totalShares = stockData.lots.reduce((sum: number, lot: any) => sum + lot.shares, 0);
+    // Calculate total cost basis from lots
+    const totalCostBasis = stockData.lots.reduce((sum: number, lot: any) => sum + (lot.shares * lot.purchasePrice), 0);
+    
+    // Get the purchase date from the first lot (assuming all lots have the same purchase date for a single transaction)
+    const purchaseDate = stockData.lots && stockData.lots.length > 0 ? 
+      new Date(stockData.lots[0].purchaseDate) : new Date();
+    
+    // Calculate average purchase price from lots
+    const avgPurchasePrice = totalShares > 0 ? totalCostBasis / totalShares : 0;
+      
     account.transactions.push({
       ticker: stockData.ticker,
       companyName: stockData.companyName,
-      type: 'buy', // Changed from transactionType to type to match schema
-      shares: stockData.shares,
-      price: stockData.avgBuyPrice, // Changed from pricePerShare to price to match schema
-      amount: stockData.shares * stockData.avgBuyPrice, // Changed from totalAmount to amount to match schema
-      date: new Date(),
+      type: 'Buy', // Use proper enum value from TransactionType.BUY
+      shares: totalShares,
+      price: avgPurchasePrice, // Use average purchase price from lots instead of current price
+      amount: totalCostBasis, // Use calculated cost basis for amount
+      date: purchaseDate,
     });
     
     // Save updated account
     await account.save();
     
     // Convert to plain object and map _id to id
-    const plainAccount = account.toObject();
+    const plainAccount = account.toObject({ virtuals: true });
     plainAccount.id = plainAccount._id.toString();
     delete plainAccount._id;
     delete plainAccount.__v;
+    
+    // Calculate and set totalShares for each stock
+    plainAccount.stocks = plainAccount.stocks.map((stock: any) => {
+      stock.totalShares = stock.lots.reduce((sum: number, lot: any) => sum + lot.shares, 0);
+      return stock;
+    });
     
     return NextResponse.json(plainAccount);
   } catch (error: any) {
