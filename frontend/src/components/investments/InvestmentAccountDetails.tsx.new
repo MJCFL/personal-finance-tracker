@@ -321,6 +321,12 @@ const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
         </div>
         
         <div className="flex flex-col items-end">
+          <div className="text-2xl font-bold">
+            ${calculateTotalValue().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </div>
+          <div className="text-sm text-gray-600">
+            Total Value
+          </div>
           {!isEditing && (
             <div className="flex flex-col items-end space-y-2">
               <button
@@ -446,15 +452,12 @@ const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
                               : crypto.lots?.reduce((sum, lot) => sum + lot.amount, 0) || 0;
                             
                             // Calculate average cost from lots if not provided directly
-                            let avgCost = 0;
-                            if (crypto.avgBuyPrice !== undefined) {
-                              avgCost = crypto.avgBuyPrice;
-                            } else if (crypto.lots && crypto.lots.length > 0) {
-                              const totalCost = crypto.lots.reduce((sum, lot) => sum + (lot.amount * lot.purchasePrice), 0);
-                              const totalAmount = crypto.lots.reduce((sum, lot) => sum + lot.amount, 0);
-                              // Guard against division by zero
-                              avgCost = totalAmount > 0 ? totalCost / totalAmount : 0;
-                            }
+                            const avgCost = crypto.avgCost !== undefined 
+                              ? crypto.avgCost 
+                              : crypto.lots && crypto.lots.length > 0
+                                ? crypto.lots.reduce((sum, lot) => sum + (lot.amount * lot.price), 0) / 
+                                  crypto.lots.reduce((sum, lot) => sum + lot.amount, 0)
+                                : 0;
                             
                             const currentValue = totalAmount * crypto.currentPrice;
                             const costBasis = totalAmount * avgCost;
@@ -558,6 +561,12 @@ const InvestmentAccountDetails: React.FC<InvestmentAccountDetailsProps> = ({
             <>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Stock Holdings</h3>
+                <button
+                  onClick={() => setIsAddStockModalOpen(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm"
+                >
+                  Add Stock
+                </button>
               </div>
               <StockList 
                 stocks={account.stocks || []} 

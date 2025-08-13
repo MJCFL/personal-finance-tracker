@@ -22,19 +22,26 @@ const Modal: React.FC<ModalProps> = ({
   // Close modal when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      // Only close if clicking on the backdrop (the semi-transparent overlay),
+      // not when clicking on any element inside the modal or its children
+      if (event.target === event.currentTarget) {
         onClose();
       }
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+    // Get the modal backdrop element
+    const modalBackdrop = document.querySelector('.modal-backdrop');
+    
+    if (isOpen && modalBackdrop) {
+      modalBackdrop.addEventListener('mousedown', handleClickOutside as EventListener);
       // Prevent scrolling when modal is open
       document.body.style.overflow = 'hidden';
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      if (modalBackdrop) {
+        modalBackdrop.removeEventListener('mousedown', handleClickOutside as EventListener);
+      }
       // Restore scrolling when modal is closed
       document.body.style.overflow = 'auto';
     };
@@ -68,7 +75,7 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 modal-backdrop">
       <div
         ref={modalRef}
         className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden flex flex-col`}

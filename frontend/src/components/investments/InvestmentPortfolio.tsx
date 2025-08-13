@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { getInvestmentAccounts, InvestmentAccountData } from '@/services/investmentService';
+import { InvestmentAccountType } from '@/types/investment';
 import InvestmentAccountList from './InvestmentAccountList';
 import InvestmentAccountDetails from './InvestmentAccountDetails';
 import AddInvestmentAccountModal from './AddInvestmentAccountModal';
@@ -13,6 +14,7 @@ const InvestmentPortfolio: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'stocks' | 'crypto' | 'transactions' | 'cash'>('stocks');
 
   // Fetch investment accounts
   const fetchAccounts = async () => {
@@ -43,6 +45,13 @@ const InvestmentPortfolio: React.FC = () => {
   useEffect(() => {
     fetchAccounts();
   }, []);
+  
+  // Set default active tab based on account type when account is selected
+  useEffect(() => {
+    if (selectedAccount?.type === InvestmentAccountType.CRYPTO_WALLET) {
+      setActiveTab('crypto');
+    }
+  }, [selectedAccount]);
 
   const handleSelectAccount = (account: InvestmentAccountData) => {
     setSelectedAccount(account);
@@ -88,7 +97,6 @@ const InvestmentPortfolio: React.FC = () => {
             accounts={accounts} 
             selectedAccountId={selectedAccount?.id}
             onSelectAccount={handleSelectAccount}
-            onAccountsChanged={fetchAccounts}
           />
         )}
       </div>

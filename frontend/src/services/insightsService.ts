@@ -726,9 +726,26 @@ export async function getFinancialSummary(): Promise<FinancialSummary> {
             return stockTotal + (totalShares * stock.currentPrice);
           }, 0) : 0;
           
-          // Add stocks value and cash
+          // Calculate cryptos value
+          const cryptosValue = Array.isArray(account.cryptos) ? account.cryptos.reduce((cryptoTotal, crypto) => {
+            if (!crypto || !crypto.currentPrice) {
+              console.warn('Invalid crypto data:', crypto);
+              return cryptoTotal;
+            }
+            
+            // Calculate total amount from lots
+            const totalAmount = Array.isArray(crypto.lots) 
+              ? crypto.lots.reduce((sum, lot) => sum + (lot.amount || 0), 0)
+              : 0;
+              
+            return cryptoTotal + (totalAmount * crypto.currentPrice);
+          }, 0) : 0;
+          
+          console.log(`Account ${account.name} - Stocks: ${stocksValue}, Cryptos: ${cryptosValue}, Cash: ${account.cash}`);
+          
+          // Add stocks value, cryptos value, and cash
           const cashValue = typeof account.cash === 'number' ? account.cash : 0;
-          return total + stocksValue + cashValue;
+          return total + stocksValue + cryptosValue + cashValue;
         } catch (accountError) {
           console.error('Error processing investment account:', accountError, account);
           return total;

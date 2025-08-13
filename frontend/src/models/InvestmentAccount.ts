@@ -7,6 +7,8 @@ export enum TransactionType {
   DIVIDEND = 'Dividend',
   DEPOSIT = 'Deposit',
   WITHDRAWAL = 'Withdrawal',
+  MINING = 'Mining',
+  STAKING = 'Staking',
 }
 
 export enum InvestmentAccountType {
@@ -16,6 +18,7 @@ export enum InvestmentAccountType {
   TRADITIONAL_IRA = 'Traditional IRA',
   EDUCATION_529 = '529 Plan',
   HSA = 'HSA',
+  CRYPTO_WALLET = 'CryptoWallet', // Changed from 'Crypto Wallet' to 'CryptoWallet' to avoid space in enum value
   OTHER = 'Other',
 }
 
@@ -23,6 +26,15 @@ export interface IStockLot {
   id: string;
   ticker: string;
   shares: number;
+  purchasePrice: number;
+  purchaseDate: Date;
+  notes?: string;
+}
+
+export interface ICryptoLot {
+  id: string;
+  symbol: string;
+  amount: number;
   purchasePrice: number;
   purchaseDate: Date;
   notes?: string;
@@ -36,6 +48,17 @@ export interface IStock {
   lastUpdated: Date;
   // Calculated fields
   totalShares?: number;
+  avgBuyPrice?: number;
+}
+
+export interface ICrypto {
+  symbol: string;
+  name: string;
+  lots: ICryptoLot[];
+  currentPrice: number;
+  lastUpdated: Date;
+  // Calculated fields
+  totalAmount?: number;
   avgBuyPrice?: number;
 }
 
@@ -55,6 +78,7 @@ export interface IInvestmentAccount extends Document {
   type: InvestmentAccountType;
   institution: string;
   stocks: IStock[];
+  cryptos: ICrypto[];
   cash: number;
   transactions: ITransaction[];
   userId: string;
@@ -79,6 +103,23 @@ const StockSchema = new Schema({
   lastUpdated: { type: Date, default: Date.now },
 });
 
+const CryptoLotSchema = new Schema({
+  id: { type: String, required: true },
+  symbol: { type: String, required: true, uppercase: true },
+  amount: { type: Number, required: true, min: 0 },
+  purchasePrice: { type: Number, required: true, min: 0 },
+  purchaseDate: { type: Date, required: true, default: Date.now },
+  notes: { type: String },
+});
+
+const CryptoSchema = new Schema({
+  symbol: { type: String, required: true, uppercase: true },
+  name: { type: String, required: true },
+  lots: [CryptoLotSchema],
+  currentPrice: { type: Number, required: true, min: 0 },
+  lastUpdated: { type: Date, default: Date.now },
+});
+
 const TransactionSchema = new Schema({
   type: { type: String, required: true, enum: Object.values(TransactionType) },
   ticker: { type: String, uppercase: true },
@@ -96,10 +137,11 @@ const InvestmentAccountSchema = new Schema(
     type: { 
       type: String, 
       required: true,
-      enum: Object.values(InvestmentAccountType),
+      enum: ['Brokerage', '401(k)', 'Roth IRA', 'Traditional IRA', '529 Plan', 'HSA', 'CryptoWallet', 'Other'],
     },
     institution: { type: String, required: true },
     stocks: [StockSchema],
+    cryptos: [CryptoSchema],
     cash: { type: Number, default: 0, min: 0 },
     transactions: [TransactionSchema],
     userId: { type: String, required: true },
@@ -118,14 +160,30 @@ StockSchema.virtual('avgBuyPrice').get(function() {
   return totalShares > 0 ? totalCost / totalShares : 0;
 });
 
-// Virtual for total value (stocks + cash)
+// Virtual for total amount and average buy price per crypto
+CryptoSchema.virtual('totalAmount').get(function() {
+  return this.lots.reduce((total, lot) => total + lot.amount, 0);
+});
+
+CryptoSchema.virtual('avgBuyPrice').get(function() {
+  const totalCost = this.lots.reduce((total, lot) => total + (lot.amount * lot.purchasePrice), 0);
+  const totalAmount = this.lots.reduce((total, lot) => total + lot.amount, 0);
+  return totalAmount > 0 ? totalCost / totalAmount : 0;
+});
+
+// Virtual for total value (stocks + cryptos + cash)
 InvestmentAccountSchema.virtual('totalValue').get(function(this: IInvestmentAccount) {
   const stocksValue = this.stocks.reduce((total, stock) => {
     const totalShares = stock.lots.reduce((shares, lot) => shares + lot.shares, 0);
     return total + (totalShares * stock.currentPrice);
   }, 0);
   
-  return stocksValue + this.cash;
+  const cryptosValue = this.cryptos.reduce((total, crypto) => {
+    const totalAmount = crypto.lots.reduce((amount, lot) => amount + lot.amount, 0);
+    return total + (totalAmount * crypto.currentPrice);
+  }, 0);
+  
+  return stocksValue + cryptosValue + this.cash;
 });
 
 export default mongoose.models.InvestmentAccount || 

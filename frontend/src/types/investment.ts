@@ -5,6 +5,8 @@ export enum TransactionType {
   DIVIDEND = 'Dividend',
   DEPOSIT = 'Deposit',
   WITHDRAWAL = 'Withdrawal',
+  MINING = 'Mining',
+  STAKING = 'Staking'
 }
 
 export enum InvestmentAccountType {
@@ -14,6 +16,7 @@ export enum InvestmentAccountType {
   TRADITIONAL_IRA = 'Traditional IRA',
   EDUCATION_529 = '529 Plan',
   HSA = 'HSA',
+  CRYPTO_WALLET = 'CryptoWallet', // Changed from 'Crypto Wallet' to 'CryptoWallet' to avoid space in enum value
   OTHER = 'Other',
 }
 
@@ -48,12 +51,33 @@ export interface ITransaction {
   notes?: string;
 }
 
+export interface ICryptoLot {
+  id: string;
+  symbol: string;
+  amount: number;
+  purchasePrice: number;
+  purchaseDate: Date;
+  notes?: string;
+}
+
+export interface ICrypto {
+  symbol: string;
+  name: string;
+  lots: ICryptoLot[];
+  currentPrice: number;
+  lastUpdated: Date;
+  // Calculated fields
+  totalAmount?: number;
+  avgBuyPrice?: number;
+}
+
 export interface IInvestmentAccount {
   id?: string;
   name: string;
   type: InvestmentAccountType;
   institution: string;
   stocks: IStock[];
+  cryptos?: ICrypto[];
   cash: number;
   transactions: ITransaction[];
   userId?: string;

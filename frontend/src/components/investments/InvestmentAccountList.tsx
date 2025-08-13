@@ -39,14 +39,23 @@ const InvestmentAccountList: React.FC<InvestmentAccountListProps> = ({
 
   // Calculate total value for each account
   const calculateTotalValue = (account: InvestmentAccountData): number => {
+    // Calculate stocks value
     const stocksValue = account.stocks?.reduce((total, stock) => {
       // Use totalShares if available, otherwise calculate from lots
       const shares = stock.totalShares || 
         stock.lots?.reduce((sum, lot) => sum + lot.shares, 0) || 0;
-      return total + (shares * stock.currentPrice);
+      return total + (shares * (stock.currentPrice || 0));
     }, 0) || 0;
     
-    return stocksValue + (account.cash || 0);
+    // Calculate cryptos value
+    const cryptosValue = account.cryptos?.reduce((total, crypto) => {
+      // Use totalAmount if available, otherwise calculate from lots
+      const amount = crypto.totalAmount || 
+        crypto.lots?.reduce((sum, lot) => sum + lot.amount, 0) || 0;
+      return total + (amount * (crypto.currentPrice || 0));
+    }, 0) || 0;
+    
+    return stocksValue + cryptosValue + (account.cash || 0);
   };
 
   // No delete handler needed anymore
@@ -81,7 +90,10 @@ const InvestmentAccountList: React.FC<InvestmentAccountListProps> = ({
                       ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {account.stocks?.length || 0} stocks
+                      {account.type === InvestmentAccountType.CRYPTO_WALLET
+                        ? `${account.cryptos?.length || 0} coins`
+                        : `${account.stocks?.length || 0} stocks`
+                      }
                     </p>
                   </div>
                 </div>

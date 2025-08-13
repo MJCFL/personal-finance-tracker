@@ -17,7 +17,8 @@ const AddInvestmentAccountModal: React.FC<AddInvestmentAccountModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
-  const [type, setType] = useState<InvestmentAccountType>(InvestmentAccountType.BROKERAGE);
+  // Temporarily use OTHER as the default type for crypto wallets as a workaround
+  const [type, setType] = useState<InvestmentAccountType>(InvestmentAccountType.OTHER);
   const [cash, setCash] = useState(0);
   // Separate state for cash input to preserve string format during typing
   const [cashInput, setCashInput] = useState('');
@@ -74,6 +75,8 @@ const AddInvestmentAccountModal: React.FC<AddInvestmentAccountModalProps> = ({
         return '529 Plan';
       case InvestmentAccountType.HSA:
         return 'HSA';
+      case InvestmentAccountType.CRYPTO_WALLET:
+        return 'Crypto Wallet'; // Display name is still 'Crypto Wallet' but the value is 'CryptoWallet'
       case InvestmentAccountType.OTHER:
         return 'Other';
       default:

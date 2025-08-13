@@ -1,4 +1,4 @@
-import { InvestmentAccountType, IStock, ITransaction, TransactionType } from '@/types/investment';
+import { InvestmentAccountType, IStock, ITransaction, TransactionType, ICrypto, ICryptoLot } from '@/types/investment';
 import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 
 export interface InvestmentAccountData {
@@ -7,6 +7,7 @@ export interface InvestmentAccountData {
   type: InvestmentAccountType;
   institution: string;
   stocks: IStock[];
+  cryptos?: ICrypto[];
   cash: number;
   transactions: ITransaction[];
 }
@@ -307,6 +308,8 @@ export async function getStockPrice(ticker: string): Promise<number> {
   }
 }
 
+
+
 // Add a new stock lot to an existing stock
 export async function addStockLot(
   accountId: string,
@@ -549,6 +552,367 @@ export async function searchStocks(query: string): Promise<any[]> {
     return await response.json();
   } catch (error: any) {
     console.error('Error searching stocks:', error);
+    throw error;
+  }
+}
+
+// The searchCryptos and getCryptoPrice functions already exist elsewhere in this file
+
+// Add crypto to investment account with lot tracking
+export async function addCrypto(
+  accountId: string,
+  cryptoData: {
+    symbol: string;
+    name: string;
+    amount: number;
+    purchasePrice: number;
+    purchaseDate: Date;
+    notes?: string;
+  }
+): Promise<InvestmentAccountData> {
+  try {
+    const { symbol, name, amount, purchasePrice, purchaseDate, notes } = cryptoData;
+    
+    // Generate a unique ID for the lot
+    const lotId = `${symbol}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    const response = await fetch(`/api/investments/${accountId}/cryptos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        symbol: symbol.toUpperCase(),
+        name,
+        lot: {
+          id: lotId,
+          symbol: symbol.toUpperCase(),
+          amount,
+          purchasePrice,
+          purchaseDate,
+          notes
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to add crypto');
+    }
+
+    let updatedAccount = await response.json();
+    
+    // Immediately update the price to ensure it's using the latest market price
+    try {
+      console.log(`Immediately updating price for newly added crypto: ${symbol}`);
+      updatedAccount = await updateCryptoPrice(accountId, symbol.toUpperCase());
+    } catch (priceError) {
+      console.error(`Error updating price for newly added crypto ${symbol}:`, priceError);
+      // Continue even if price update fails - we'll still have the account with the initial price
+    }
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error adding crypto:', error);
+    throw error;
+  }
+}
+
+// Update crypto in investment account
+export async function updateCrypto(
+  accountId: string,
+  symbol: string,
+  cryptoData: Partial<ICrypto>
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${symbol}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(cryptoData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update crypto');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error updating crypto:', error);
+    throw error;
+  }
+}
+
+// Remove crypto from investment account
+export async function removeCrypto(
+  accountId: string,
+  symbol: string
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${symbol}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to remove crypto');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error removing crypto:', error);
+    throw error;
+  }
+}
+
+// Add a new crypto lot to an existing crypto
+export async function addCryptoLot(
+  accountId: string,
+  symbol: string,
+  lotData: {
+    amount: number;
+    purchasePrice: number;
+    purchaseDate: Date;
+    notes?: string;
+  }
+): Promise<InvestmentAccountData> {
+  try {
+    // Generate a unique ID for the lot
+    const lotId = `${symbol}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${symbol}/lots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: lotId,
+        symbol: symbol.toUpperCase(),
+        ...lotData
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to add crypto lot');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error adding crypto lot:', error);
+    throw error;
+  }
+}
+
+// Update a crypto lot
+export async function updateCryptoLot(
+  accountId: string,
+  symbol: string,
+  lotId: string,
+  lotData: Partial<{
+    amount: number;
+    purchasePrice: number;
+    purchaseDate: Date;
+    notes?: string;
+  }>
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${symbol}/lots/${lotId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(lotData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update crypto lot');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error updating crypto lot:', error);
+    throw error;
+  }
+}
+
+// Delete a crypto lot
+export async function deleteCryptoLot(
+  accountId: string,
+  symbol: string,
+  lotId: string
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${symbol}/lots/${lotId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete crypto lot');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error deleting crypto lot:', error);
+    throw error;
+  }
+}
+
+// Update crypto price
+export async function updateCryptoPrice(
+  accountId: string,
+  symbol: string
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${symbol}/price`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update crypto price');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error updating crypto price:', error);
+    throw error;
+  }
+}
+
+// Get crypto price from API
+export async function getCryptoPrice(symbol: string): Promise<number> {
+  try {
+    const response = await fetch(`/api/cryptos/price?symbol=${symbol}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to get crypto price');
+    }
+
+    const data = await response.json();
+    return data.price;
+  } catch (error: any) {
+    console.error('Error getting crypto price:', error);
+    throw error;
+  }
+}
+
+// Search for cryptos by symbol or name
+export async function searchCryptos(query: string): Promise<any[]> {
+  try {
+    const response = await fetch(`/api/cryptos/search?query=${query}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to search cryptos');
+    }
+
+    return await response.json();
+  } catch (error: any) {
+    console.error('Error searching cryptos:', error);
+    throw error;
+  }
+}
+
+
+
+// Sell crypto from investment account
+export async function sellCrypto(
+  accountId: string,
+  saleData: {
+    symbol: string;
+    name: string;
+    amount: number;
+    price: number;
+    date?: Date;
+    notes?: string;
+  }
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/cryptos/${saleData.symbol}/sell`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: saleData.amount,
+        price: saleData.price,
+        date: saleData.date || new Date(),
+        notes: saleData.notes,
+        type: TransactionType.SELL
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to sell crypto');
+    }
+
+    const updatedAccount = await response.json();
+    
+    // Emit event to update financial data
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    
+    return updatedAccount;
+  } catch (error: any) {
+    console.error('Error selling crypto:', error);
     throw error;
   }
 }

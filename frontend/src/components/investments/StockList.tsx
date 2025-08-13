@@ -5,6 +5,7 @@ import { IStock } from '@/models/InvestmentAccount';
 import { removeStock, updateStock, getStockPrice } from '@/services/investmentService';
 import SellStockModal from './SellStockModal';
 import StockDetail from './StockDetail';
+import AddStockModal from './AddStockModal';
 
 interface StockListProps {
   stocks: IStock[];
@@ -21,6 +22,7 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
   const [success, setSuccess] = useState<string | null>(null);
   const [sortField, setSortField] = useState<'value' | 'gainLoss'>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [isAddStockModalOpen, setIsAddStockModalOpen] = useState<boolean>(false);
 
   // Helper function to calculate total value of a stock position
   const calculateStockValue = (stock: IStock): number => {
@@ -130,6 +132,17 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
         />
       )}
       
+      {isAddStockModalOpen && (
+        <AddStockModal
+          accountId={accountId}
+          onClose={() => setIsAddStockModalOpen(false)}
+          onStockAdded={() => {
+            setIsAddStockModalOpen(false);
+            onStockUpdated();
+          }}
+        />
+      )}
+      
       {selectedStock ? (
         <div className="mb-6">
           <button
@@ -163,17 +176,25 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
                 {stocks.length} {stocks.length === 1 ? 'stock' : 'stocks'} in portfolio
               </span>
             </div>
-            <button
-              onClick={handleRefreshPrices}
-              disabled={refreshingPrices}
-              className={`text-sm px-3 py-1 rounded ${
-                refreshingPrices
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
-              }`}
-            >
-              {refreshingPrices ? 'Refreshing...' : 'Refresh Prices'}
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleRefreshPrices}
+                disabled={refreshingPrices}
+                className={`text-sm px-4 py-2 rounded-md ${
+                  refreshingPrices
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {refreshingPrices ? 'Refreshing...' : 'Refresh Prices'}
+              </button>
+              <button
+                onClick={() => setIsAddStockModalOpen(true)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm"
+              >
+                Add Stock
+              </button>
+            </div>
           </div>
 
           {stocks.length === 0 ? (
@@ -183,33 +204,33 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
             </div>
           ) : (
             <div className="w-full">
-              <table className="w-full table-fixed divide-y divide-gray-200">
+              <table className="min-w-full bg-white border border-gray-200 rounded-lg">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">
-                      Stock
+                    <th className="py-2 px-4 border-b text-left">
+                      STOCK
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
-                      Shares
+                    <th className="py-2 px-4 border-b text-right">
+                      SHARES
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
-                      Avg. Cost
+                    <th className="py-2 px-4 border-b text-right">
+                      AVG. COST
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
-                      Current Price
+                    <th className="py-2 px-4 border-b text-right">
+                      CURRENT PRICE
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
-                      Value
+                    <th className="py-2 px-4 border-b text-right">
+                      VALUE
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
-                      Gain/Loss
+                    <th className="py-2 px-4 border-b text-right">
+                      GAIN/LOSS
                     </th>
-                    <th scope="col" className="px-2 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-[18%]">
-                      Actions
+                    <th className="py-2 px-4 border-b text-right">
+                      ACTIONS
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody>
                   {sortedStocks.map((stock) => {
                     const value = calculateStockValue(stock);
                     const gainLoss = calculateGainLoss(stock);
@@ -217,19 +238,21 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
                     const isPositive = gainLoss >= 0;
                     
                     return (
-                      <tr key={stock.ticker}>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            <div 
-                              className="text-sm font-medium text-gray-900 hover:text-blue-600 cursor-pointer"
-                              onClick={() => setSelectedStock(stock)}
-                            >
-                              {stock.ticker}
+                      <tr key={stock.ticker} className="hover:bg-gray-50">
+                        <td className="py-2 px-4 border-b">
+                          <div className="flex items-center">
+                            <div>
+                              <div 
+                                className="text-base font-bold text-gray-900 hover:text-blue-600 cursor-pointer"
+                                onClick={() => setSelectedStock(stock)}
+                              >
+                                {stock.ticker}
+                              </div>
+                              <div className="text-sm text-gray-600">{stock.companyName}</div>
                             </div>
-                            <div className="text-xs text-gray-500 truncate max-w-[120px]">{stock.companyName}</div>
                           </div>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-right text-sm text-gray-500">
+                        <td className="py-2 px-4 border-b text-right text-base font-bold text-gray-900">
                           {(() => {
                             // Use totalShares from the API if available, otherwise calculate from lots
                             const totalShares = stock.totalShares !== undefined 
@@ -238,49 +261,51 @@ const StockList: React.FC<StockListProps> = ({ stocks, accountId, onStockUpdated
                             return totalShares.toLocaleString('en-US', { maximumFractionDigits: 4 });
                           })()}
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-right text-sm text-gray-500">
+                        <td className="py-2 px-4 border-b text-right text-base font-bold text-gray-900">
                           ${(stock.lots.length > 0 ? stock.lots.reduce((sum, lot) => sum + (lot.shares * lot.purchasePrice), 0) / stock.lots.reduce((sum, lot) => sum + lot.shares, 0) : 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-right">
-                          <div className="text-sm text-gray-900">
+                        <td className="py-2 px-4 border-b text-right">
+                          <div className="text-base font-bold text-gray-900">
                             ${stock.currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-600">
                             {formatDate(stock.lastUpdated.toString())}
                           </div>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-right text-sm text-gray-900">
-                          ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          <div className="text-xs text-gray-500">
+                        <td className="py-2 px-4 border-b text-right">
+                          <div className="text-base font-bold text-gray-900">
+                            ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </div>
+                          <div className="text-xs text-gray-600">
                             {((value / totalPortfolioValue) * 100).toFixed(1)}%
                           </div>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-right">
-                          <div className={`text-sm ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                            {isPositive ? '+' : ''}${Math.abs(gainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <td className="py-2 px-4 border-b text-right">
+                          <div className={`text-base font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                            ${Math.abs(gainLoss).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </div>
-                          <div className={`text-xs ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-                            {isPositive ? '+' : ''}{gainLossPercentage.toFixed(2)}%
+                          <div className={`text-xs font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                            {isPositive ? '+' : '-'}{Math.abs(gainLossPercentage).toFixed(2)}%
                           </div>
                         </td>
-                        <td className="px-2 py-3 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="py-2 px-4 border-b text-right">
                           <div className="flex justify-end space-x-2">
                             <button
                               onClick={() => setSelectedStock(stock)}
-                              className="text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded"
+                              className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md text-xs"
                             >
                               Details
                             </button>
                             <button
                               onClick={() => setStockToSell(stock)}
-                              className="text-xs px-2 py-1 bg-green-50 text-green-600 hover:bg-green-100 rounded"
+                              className="text-green-600 hover:text-green-800 text-sm"
                             >
                               Sell
                             </button>
                             <button
                               onClick={() => handleDeleteStock(stock.ticker)}
                               disabled={deletingStock === stock.ticker}
-                              className={`text-xs px-2 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded ${
+                              className={`text-red-600 hover:text-red-800 text-sm ${
                                 deletingStock === stock.ticker ? 'opacity-50 cursor-not-allowed' : ''
                               }`}
                             >
