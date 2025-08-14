@@ -1,11 +1,12 @@
 export enum AccountType {
-  CHECKING = 'Checking',
-  SAVINGS = 'Savings',
-  CREDIT_CARD = 'Credit Card',
-  LOAN = 'Loan',
-  RETIREMENT = 'Retirement',
-  MORTGAGE = 'Mortgage',
-  OTHER = 'Other',
+  CHECKING = 'checking',
+  SAVINGS = 'savings',
+  CREDIT_CARD = 'credit_card',
+  LOAN = 'loan',
+  RETIREMENT = 'retirement',
+  MORTGAGE = 'mortgage',
+  INVESTMENT = 'investment',
+  OTHER = 'other',
 }
 
 export interface SavingsBucket {
@@ -39,5 +40,6 @@ export const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
   { value: AccountType.LOAN, label: 'Loan' },
   { value: AccountType.RETIREMENT, label: 'Retirement' },
   { value: AccountType.MORTGAGE, label: 'Mortgage' },
+  { value: AccountType.INVESTMENT, label: 'Investment' },
   { value: AccountType.OTHER, label: 'Other' },
 ];

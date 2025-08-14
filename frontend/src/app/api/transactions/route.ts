@@ -117,6 +117,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // For payment transactions, verify target account ownership and type
+    if (body.type === TransactionType.PAYMENT) {
+      if (!body.targetAccountId) {
+        return NextResponse.json(
+          { error: 'Target account is required for payment transactions' },
+          { status: 400 }
+        );
+      }
+
+      const targetAccount = await Account.findById(body.targetAccountId);
+      if (!targetAccount) {
+        return NextResponse.json(
+          { error: 'Target account not found' },
+          { status: 404 }
+        );
+      }
+
+      if (targetAccount.userId !== session.user.id) {
+        return NextResponse.json(
+          { error: 'Unauthorized: You do not have access to this target account' },
+          { status: 403 }
+        );
+      }
+
+      // Verify target account is a liability account (credit card, loan, mortgage)
+      const validLiabilityTypes = ['credit_card', 'loan', 'mortgage'];
+      if (!validLiabilityTypes.includes(targetAccount.type)) {
+        return NextResponse.json(
+          { error: 'Target account must be a liability account (credit card, loan, or mortgage)' },
+          { status: 400 }
+        );
+      }
+    }
+
     // If budget is specified, verify budget ownership
     if (body.budgetId) {
       const budget = await Budget.findById(body.budgetId);
@@ -134,8 +168,8 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Update budget spent amount if it's an expense
-      if (body.type === 'expense' || body.type === TransactionType.EXPENSE) {
+      // Update budget spent amount if it's an expense or payment
+      if (body.type === TransactionType.EXPENSE || body.type === TransactionType.PAYMENT) {
         console.log('Updating budget spent amount:', body.budgetId, 'Amount:', Math.abs(body.amount));
         await Budget.findByIdAndUpdate(
           body.budgetId,
@@ -149,11 +183,22 @@ export async function POST(req: NextRequest) {
     console.log('Transaction type:', body.type, 'Amount:', body.amount);
     
     // Handle transaction types
-    if (body.type === 'income' || body.type === TransactionType.INCOME) {
+    if (body.type === TransactionType.INCOME) {
       balanceChange = Math.abs(body.amount);
-    } else if (body.type === 'expense' || body.type === TransactionType.EXPENSE) {
+    } else if (body.type === TransactionType.EXPENSE) {
       // For expenses, we store positive amounts but decrease the balance
       balanceChange = -Math.abs(body.amount);
+    } else if (body.type === TransactionType.PAYMENT) {
+      // For payments, decrease the source account balance
+      balanceChange = -Math.abs(body.amount);
+      
+      // Also decrease the target liability account balance (paying down debt)
+      await Account.findByIdAndUpdate(
+        body.targetAccountId,
+        { $inc: { balance: -Math.abs(body.amount) } }
+      );
+      
+      console.log(`Payment of $${Math.abs(body.amount)} applied to liability account ${body.targetAccountId}`);
     }
 
     if (balanceChange !== 0) {

@@ -3,11 +3,46 @@ import { TransactionType } from '@/types/commonTypes';
 import Cookies from 'js-cookie';
 import eventEmitter, { FINANCIAL_DATA_CHANGED, TRANSACTION_CHANGED } from '@/utils/eventEmitter';
 
+// Import the transaction service at the top level to avoid circular dependency issues
+import { getTransactions } from '@/services/transactionService';
+
 // Subscribe to transaction changes to update budgets automatically
-eventEmitter.on(TRANSACTION_CHANGED, () => {
-  console.log('Transaction changed event received in budgetService, triggering budget refresh');
-  // Emit financial data changed event to trigger budget refresh
-  eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+eventEmitter.on(TRANSACTION_CHANGED, async () => {
+  console.log('Transaction changed event received in budgetService, updating budget spending');
+  try {
+    // Get all budgets
+    const budgets = await getBudgets();
+    console.log(`Found ${budgets.length} budgets to update after transaction change`);
+    
+    // Update spending for each budget based on transactions
+    for (const budget of budgets) {
+      console.log(`Calculating spending for budget: ${budget.name} (${budget.category})`);
+      const spent = await calculateBudgetSpendingFromTransactions(budget);
+      console.log(`Budget ${budget.name}: Current spent=${budget.spent}, Calculated spent=${spent}`);
+      
+      if (spent !== budget.spent) {
+        // Only update if the spent amount has changed
+        console.log(`Updating budget ${budget.name} spent amount from ${budget.spent} to ${spent}`);
+        // Use the direct API call to update just the spent amount
+        const response = await fetch(`/api/budgets/${budget.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ spent })
+        });
+        
+        if (!response.ok) {
+          console.error(`Failed to update budget ${budget.id} spent amount:`, await response.text());
+        } else {
+          console.log(`Successfully updated budget ${budget.name} spent amount to ${spent}`);
+        }
+      }
+    }
+    
+    // Emit financial data changed event to trigger UI refresh
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+  } catch (error) {
+    console.error('Error updating budgets after transaction change:', error);
+  }
 });
 
 // Demo budget data
@@ -274,7 +309,9 @@ export async function createBudget(budgetData: BudgetFormData): Promise<Budget> 
   const formattedData = {
     ...budgetData,
     startDate: startDate.toISOString(),
-    endDate: endDate ? endDate.toISOString() : undefined
+    endDate: endDate ? endDate.toISOString() : undefined,
+    // Initialize spent to 0, will be updated with actual transactions after creation
+    spent: 0
   };
   
   console.log('Sending budget data to API:', formattedData);
@@ -316,6 +353,26 @@ export async function createBudget(budgetData: BudgetFormData): Promise<Budget> 
   }
 
   const result = await response.json();
+  
+  // Calculate initial spending from existing transactions
+  try {
+    console.log('Calculating initial spending for new budget:', result.name);
+    const initialSpent = await calculateBudgetSpendingFromTransactions(result);
+    if (initialSpent > 0) {
+      console.log(`New budget ${result.name} has initial spending of ${initialSpent} from existing transactions`);
+      // Update the budget with the calculated spending
+      await fetch(`/api/budgets/${result.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spent: initialSpent })
+      });
+      // Update the result object with the calculated spending
+      result.spent = initialSpent;
+    }
+  } catch (calcError) {
+    console.error('Error calculating initial budget spending:', calcError);
+    // Continue with the budget creation even if spending calculation fails
+  }
   
   // Emit event to notify that financial data has changed
   eventEmitter.emit(FINANCIAL_DATA_CHANGED);
@@ -408,7 +465,7 @@ export async function deleteBudget(id: string): Promise<{ message: string }> {
       console.error('Delete budget error response:', error);
       throw new Error(error.error || 'Failed to delete budget');
     }
-
+    
     const result = await response.json();
     
     // Emit event to notify that financial data has changed
@@ -424,9 +481,6 @@ export async function deleteBudget(id: string): Promise<{ message: string }> {
 // Calculate budget spending from transactions based on matching category
 export async function calculateBudgetSpendingFromTransactions(budget: Budget): Promise<number> {
   try {
-    // Import here to avoid circular dependencies
-    const { getTransactions } = await import('@/services/transactionService');
-    
     // Get the budget period dates
     const startDate = new Date(budget.startDate);
     let endDate = budget.endDate ? new Date(budget.endDate) : new Date();
@@ -474,17 +528,31 @@ export async function calculateBudgetSpendingFromTransactions(budget: Budget): P
       }
     }
     
+    console.log(`Fetching transactions for budget ${budget.name} (${budget.category})`);
+    console.log(`Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
+    
     // Get transactions that match the budget category and time period
     const response = await getTransactions({
       category: budget.category,
-      type: TransactionType.EXPENSE,
+      type: TransactionType.EXPENSE, // Use enum value to match database values
       startDate: startDate,
       endDate: endDate
     });
     
+    console.log(`Found ${response.transactions.length} matching transactions for budget ${budget.name}`);
+    
+    // Debug transaction data
+    if (response.transactions.length > 0) {
+      console.log('Sample transaction:', response.transactions[0]);
+    }
+    
     // Calculate total spending from matching transactions
     const totalSpent = response.transactions.reduce((sum, transaction) => {
-      return sum + transaction.amount;
+      // Ensure amount is treated as a number and is positive
+      const amount = typeof transaction.amount === 'string' ? 
+                    parseFloat(transaction.amount) : 
+                    Math.abs(transaction.amount);
+      return sum + amount;
     }, 0);
     
     console.log(`Budget ${budget.name}: Calculated spending of ${totalSpent} from ${response.transactions.length} transactions`);

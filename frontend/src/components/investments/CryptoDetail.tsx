@@ -130,6 +130,7 @@ export default function CryptoDetail({ crypto, accountId, onClose, onUpdate }: C
           </div>
         </div>
         <div className="bg-white border border-gray-200 p-4 rounded-md shadow-sm">
+          <div className="text-sm font-medium text-gray-600 mb-1">Total Value</div>
           <div className="text-2xl font-bold text-gray-900">{formatCurrency(totalValue)}</div>
         </div>
       </div>

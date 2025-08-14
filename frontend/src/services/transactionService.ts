@@ -125,10 +125,8 @@ export async function createTransaction(transactionData: TransactionData): Promi
       body: JSON.stringify({
         ...transactionData,
         date: transactionData.date.toISOString(),
-        // Ensure type is one of the valid enum values
-        type: transactionData.type === 'income' ? 'income' : 
-              transactionData.type === 'expense' ? 'expense' : 
-              transactionData.type === 'transfer' ? 'transfer' : 'expense',
+        // Use the correct enum values for transaction type
+        type: transactionData.type,
         // Ensure amount is a number
         amount: typeof transactionData.amount === 'string' ? 
                 parseFloat(transactionData.amount) : transactionData.amount

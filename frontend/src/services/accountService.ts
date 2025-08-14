@@ -30,6 +30,7 @@ export async function getAccounts(filters?: {
     const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
     
     // Make API request
+    console.log('Fetching accounts with query:', queryString);
     const response = await fetch(`/api/accounts${queryString}`, {
       method: 'GET',
       headers: {
@@ -37,12 +38,17 @@ export async function getAccounts(filters?: {
       },
     });
 
+    console.log('Accounts API response status:', response.status);
+    
     if (!response.ok) {
       const error = await response.json();
+      console.error('Error fetching accounts:', error);
       throw new Error(error.error || 'Failed to fetch accounts');
     }
 
-    return await response.json();
+    const accounts = await response.json();
+    console.log('Accounts fetched successfully:', accounts);
+    return accounts;
   } catch (error: any) {
     console.error('Error fetching accounts:', error);
     throw error;

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createTransaction, updateTransaction, TransactionData } from '@/services/transactionService';
-import { BudgetCategory, TransactionType } from '@/types/commonTypes';
+import { getBudgets } from '@/services/budgetService';
+import { getAccounts } from '@/services/accountService';
+import { BudgetCategory, TransactionType, AccountType } from '@/types/commonTypes';
 import { handleStringNumberInputChange } from '@/utils/inputHelpers';
 
 interface TransactionFormData {
@@ -10,6 +12,7 @@ interface TransactionFormData {
   amount: string;
   category: BudgetCategory;
   accountId: string;
+  targetAccountId?: string; // For payment transactions - the account being paid
   budgetId?: string;
   isRecurring: boolean;
   recurringFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
@@ -46,6 +49,8 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
     amount: '',
     category: BudgetCategory.OTHER,
     accountId: '',
+    targetAccountId: undefined,
+    budgetId: undefined,
     isRecurring: false,
     recurringFrequency: undefined,
     tags: []
@@ -53,6 +58,10 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [loadingBudgets, setLoadingBudgets] = useState(false);
+  const [liabilityAccounts, setLiabilityAccounts] = useState<any[]>([]);
+  const [loadingLiabilityAccounts, setLoadingLiabilityAccounts] = useState(false);
   
   // Set default account if available or pre-fill form with transaction data in edit mode
   useEffect(() => {
@@ -65,6 +74,8 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
         amount: transaction.amount.toString(),
         category: transaction.category,
         accountId: transaction.accountId,
+        targetAccountId: (transaction as any).targetAccountId, // Add support for payment transactions
+        budgetId: transaction.budgetId,
         isRecurring: transaction.isRecurring,
         recurringFrequency: transaction.recurringFrequency,
         tags: transaction.tags || []
@@ -77,8 +88,72 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
       }));
     }
   }, [accounts, transaction]);
+  
+  // Load available budgets for the selected category
+  useEffect(() => {
+    const loadBudgets = async () => {
+      setLoadingBudgets(true);
+      try {
+        // Only load budgets for expense transactions
+        if (formData.type === TransactionType.EXPENSE) {
+          const budgetList = await getBudgets();
+          // Filter budgets by category if a category is selected
+          const filteredBudgets = formData.category ? 
+            budgetList.filter(budget => budget.category === formData.category) : 
+            budgetList;
+          
+          console.log('Loaded budgets for category:', formData.category, filteredBudgets);
+          setBudgets(filteredBudgets);
+        } else {
+          // Clear budgets for non-expense transactions
+          setBudgets([]);
+        }
+      } catch (error) {
+        console.error('Error loading budgets:', error);
+      } finally {
+        setLoadingBudgets(false);
+      }
+    };
+    
+    loadBudgets();
+  }, [formData.type, formData.category]);
+  
+  // Load liability accounts for payment transactions
+  useEffect(() => {
+    const loadLiabilityAccounts = async () => {
+      if (formData.type === TransactionType.PAYMENT) {
+        setLoadingLiabilityAccounts(true);
+        try {
+          // Get all accounts and filter for liability types
+          const allAccounts = await getAccounts();
+          const liabilities = allAccounts.filter(account => 
+            account.type === AccountType.CREDIT_CARD || 
+            account.type === AccountType.LOAN || 
+            account.type === AccountType.MORTGAGE
+          );
+          
+          setLiabilityAccounts(liabilities);
+          
+          // Set default target account if available
+          if (liabilities.length > 0 && !formData.targetAccountId) {
+            setFormData(prev => ({
+              ...prev,
+              targetAccountId: liabilities[0].id,
+              category: BudgetCategory.DEBT // Default category for payments
+            }));
+          }
+        } catch (error) {
+          console.error('Error loading liability accounts:', error);
+        } finally {
+          setLoadingLiabilityAccounts(false);
+        }
+      }
+    };
+    
+    loadLiabilityAccounts();
+  }, [formData.type]);
 
-  const handleInputChange = (field: keyof TransactionFormData, value: string | boolean) => {
+  const handleInputChange = (field: keyof TransactionFormData, value: string | boolean | undefined) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -105,6 +180,11 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
       
       if (isNaN(amountValue) || amountValue <= 0) {
         throw new Error('Please enter a valid amount greater than zero');
+      }
+      
+      // Validate payment-specific fields
+      if (formData.type === TransactionType.PAYMENT && !formData.targetAccountId) {
+        throw new Error('Please select a liability account to pay');
       }
       
       // Create transaction object
@@ -156,24 +236,33 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Transaction Type */}
-          <div className="flex space-x-4">
-            <label className="flex items-center">
+          <div className="flex flex-wrap space-x-4">
+            <label className="flex items-center mb-2">
               <input
                 type="radio"
-                checked={formData.type === 'expense'}
-                onChange={() => handleInputChange('type', 'expense')}
+                checked={formData.type === TransactionType.EXPENSE}
+                onChange={() => handleInputChange('type', TransactionType.EXPENSE)}
                 className="mr-2"
               />
               <span className="text-white">Expense</span>
             </label>
-            <label className="flex items-center">
+            <label className="flex items-center mb-2">
               <input
                 type="radio"
-                checked={formData.type === 'income'}
-                onChange={() => handleInputChange('type', 'income')}
+                checked={formData.type === TransactionType.INCOME}
+                onChange={() => handleInputChange('type', TransactionType.INCOME)}
                 className="mr-2"
               />
               <span className="text-white">Income</span>
+            </label>
+            <label className="flex items-center mb-2">
+              <input
+                type="radio"
+                checked={formData.type === TransactionType.PAYMENT}
+                onChange={() => handleInputChange('type', TransactionType.PAYMENT)}
+                className="mr-2"
+              />
+              <span className="text-white">Payment</span>
             </label>
           </div>
 
@@ -275,6 +364,58 @@ export default function AddTransactionModal({ onClose, onTransactionAdded, accou
               ))}
             </select>
           </div>
+
+          {/* Target Account (only for payments) */}
+          {formData.type === TransactionType.PAYMENT && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-100 mb-1">Pay To (Liability Account)</label>
+              <select
+                className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.targetAccountId || ''}
+                onChange={(e) => handleInputChange('targetAccountId', e.target.value)}
+                disabled={loadingLiabilityAccounts}
+              >
+                <option value="">Select liability account</option>
+                {liabilityAccounts.map(account => (
+                  <option key={account.id} value={account.id}>
+                    {account.name} (${account.balance.toLocaleString()})
+                  </option>
+                ))}
+              </select>
+              {loadingLiabilityAccounts && (
+                <div className="mt-1 text-sm text-blue-400">Loading accounts...</div>
+              )}
+              {!loadingLiabilityAccounts && liabilityAccounts.length === 0 && (
+                <div className="mt-1 text-sm text-yellow-400">No liability accounts found</div>
+              )}
+            </div>
+          )}
+
+          {/* Budget (only for expenses) */}
+          {formData.type === TransactionType.EXPENSE && (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-100 mb-1">Budget</label>
+              <select
+                className="w-full px-3 py-2 bg-gray-600 text-white rounded-lg border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.budgetId || ''}
+                onChange={(e) => handleInputChange('budgetId', e.target.value === '' ? undefined : e.target.value)}
+                disabled={loadingBudgets}
+              >
+                <option value="">-- No Budget --</option>
+                {budgets.map(budget => (
+                  <option key={budget.id} value={budget.id}>
+                    {budget.name} (${budget.amount - budget.spent} remaining)
+                  </option>
+                ))}
+              </select>
+              {loadingBudgets && (
+                <div className="mt-1 text-sm text-blue-400">Loading budgets...</div>
+              )}
+              {!loadingBudgets && budgets.length === 0 && formData.category && (
+                <div className="mt-1 text-sm text-gray-400">No budgets found for this category</div>
+              )}
+            </div>
+          )}
 
           {/* Recurring Transaction */}
           <div>

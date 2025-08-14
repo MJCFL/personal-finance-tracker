@@ -27,9 +27,19 @@ interface GoalPrediction {
   chartData: PredictionData[];
 }
 
+interface TotalSavingsPrediction {
+  currentTotal: number;
+  monthlyContribution: number;
+  monthlyInterest: number;
+  annualInterest: number;
+  interestRate: number;
+  chartData: PredictionData[];
+}
+
 export default function SavingsPredictions({ accounts }: SavingsPredictionsProps) {
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
   const [monthlyContribution, setMonthlyContribution] = useState<number>(100);
+  const [viewMode, setViewMode] = useState<'buckets' | 'total'>('buckets');
   // We'll use memoized values directly instead of state to prevent infinite loops
 
   // Extract all buckets with goals from all accounts
@@ -51,7 +61,7 @@ export default function SavingsPredictions({ accounts }: SavingsPredictionsProps
   }, [bucketsWithGoals]); // Remove selectedBucketId from dependencies
 
   // Use React.useMemo to memoize the predictions calculation
-  const { goalPredictionsData, selectedPredictionData } = React.useMemo(() => {
+  const { goalPredictionsData, selectedPredictionData, totalSavingsPrediction } = React.useMemo(() => {
     // Calculate predictions for all buckets with goals
     const predictions = bucketsWithGoals.map(bucket => {
       const currentAmount = bucket.amount;
@@ -96,19 +106,202 @@ export default function SavingsPredictions({ accounts }: SavingsPredictionsProps
     // Find selected prediction
     const selected = predictions.find(p => p.bucketId === selectedBucketId) || null;
     
-    return { goalPredictionsData: predictions, selectedPredictionData: selected };
-  }, [bucketsWithGoals, monthlyContribution, selectedBucketId]);
+    // Calculate total savings prediction
+    const currentTotal = accounts.reduce((sum, account) => sum + account.balance, 0);
+    
+    // Calculate weighted average interest rate
+    const totalInterestAmount = accounts.reduce((sum, account) => {
+      return sum + (account.balance * (account.interestRate || 0) / 100);
+    }, 0);
+    
+    const weightedInterestRate = currentTotal > 0 ? (totalInterestAmount / currentTotal) * 100 : 0;
+    const monthlyInterest = totalInterestAmount / 12;
+    const annualInterest = totalInterestAmount;
+    
+    // Generate chart data for total savings growth over 5 years (60 months)
+    const totalChartData: PredictionData[] = [];
+    const today = new Date();
+    let runningTotal = currentTotal;
+    
+    for (let i = 0; i <= 60; i++) {
+      const date = new Date(today);
+      date.setMonth(today.getMonth() + i);
+      
+      // Add monthly contribution and interest
+      if (i > 0) {
+        runningTotal += monthlyContribution;
+        runningTotal += (runningTotal * weightedInterestRate / 100) / 12; // Monthly interest
+      }
+      
+      totalChartData.push({
+        name: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        value: runningTotal
+      });
+    }
+    
+    const totalPrediction: TotalSavingsPrediction = {
+      currentTotal,
+      monthlyContribution,
+      monthlyInterest,
+      annualInterest,
+      interestRate: weightedInterestRate,
+      chartData: totalChartData
+    };
+    
+    return { 
+      goalPredictionsData: predictions, 
+      selectedPredictionData: selected,
+      totalSavingsPrediction: totalPrediction
+    };
+  }, [bucketsWithGoals, monthlyContribution, selectedBucketId, accounts]);
 
   // Use the memoized values directly instead of updating state
   // This prevents the infinite render loop
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold flex items-center mb-6">
-        <FaChartLine className="mr-2" /> Savings Predictions
-      </h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold flex items-center">
+          <FaChartLine className="mr-2" /> Savings Predictions
+        </h2>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setViewMode('buckets')}
+            className={`px-3 py-1 rounded-md text-sm ${viewMode === 'buckets' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+          >
+            Savings Buckets
+          </button>
+          <button
+            onClick={() => setViewMode('total')}
+            className={`px-3 py-1 rounded-md text-sm ${viewMode === 'total' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
+          >
+            Total Savings
+          </button>
+        </div>
+      </div>
 
-      {bucketsWithGoals.length === 0 ? (
+      {accounts.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">No savings accounts found.</p>
+          <p className="mt-2">Create a savings account to see predictions.</p>
+        </div>
+      ) : viewMode === 'total' ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <div className="lg:col-span-1">
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Monthly Contribution ($)
+                </label>
+                <input
+                  type="number"
+                  value={monthlyContribution}
+                  onChange={(e) => setMonthlyContribution(Math.max(1, Number(e.target.value)))}
+                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
+                  min="1"
+                  step="10"
+                />
+              </div>
+
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="font-medium mb-3">Total Savings Analysis</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Current Total:</span>
+                    <span className="font-medium">${totalSavingsPrediction.currentTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Average Interest Rate:</span>
+                    <span className="font-medium">{totalSavingsPrediction.interestRate.toFixed(2)}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Monthly Interest:</span>
+                    <span className="font-medium text-green-600">+${totalSavingsPrediction.monthlyInterest.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Annual Interest:</span>
+                    <span className="font-medium text-green-600">+${totalSavingsPrediction.annualInterest.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t dark:border-gray-600 pt-2 mt-2"></div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600 dark:text-gray-400">Monthly Contribution:</span>
+                    <span className="font-medium">${totalSavingsPrediction.monthlyContribution.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 dark:text-gray-400">5-Year Projection:</span>
+                    <span className="font-medium">
+                      ${totalSavingsPrediction.chartData[60]?.value.toFixed(2) || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2">
+              <div className="h-80">
+                <h3 className="font-medium mb-3 text-center">5-Year Growth Projection</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={totalSavingsPrediction.chartData.map((item, index) => ({ ...item, key: `total-chart-data-${index}` }))}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Projected Balance']} />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      name="Projected Balance"
+                      stroke="#10b981"
+                      activeDot={{ r: 8 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="font-medium mb-3">Savings Accounts Summary</h3>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Account</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Interest Rate</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Annual Interest</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Buckets</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {accounts.map((account) => {
+                    const annualInterest = account.balance * (account.interestRate || 0) / 100;
+                    return (
+                      <tr key={account.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td className="px-4 py-3">
+                          <div className="font-medium">{account.name}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">{account.institution}</div>
+                        </td>
+                        <td className="px-4 py-3">${account.balance.toFixed(2)}</td>
+                        <td className="px-4 py-3">{account.interestRate?.toFixed(2) || '0.00'}%</td>
+                        <td className="px-4 py-3 text-green-600">+${annualInterest.toFixed(2)}</td>
+                        <td className="px-4 py-3">{(account.buckets || []).length}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : bucketsWithGoals.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">No savings goals found.</p>
           <p className="mt-2">Add goals to your savings buckets to see predictions.</p>

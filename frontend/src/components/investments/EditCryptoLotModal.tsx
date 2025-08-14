@@ -99,14 +99,18 @@ export default function EditCryptoLotModal({
             Amount *
           </label>
           <input
-            type="number"
+            type="text"
             id="amount"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              // Only allow valid number input with up to 8 decimal places
+              const value = e.target.value;
+              if (value === '' || /^\d*\.?\d{0,8}$/.test(value)) {
+                setAmount(value);
+              }
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="0.25"
-            step="0.000001"
-            min="0.000001"
             required
           />
         </div>

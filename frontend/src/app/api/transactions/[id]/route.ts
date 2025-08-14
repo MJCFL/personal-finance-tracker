@@ -5,6 +5,7 @@ import Account from '@/models/Account';
 import Budget from '@/models/Budget';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { TransactionType } from '@/types/commonTypes';
 
 // Helper function to get transaction and verify ownership
 async function getTransactionAndVerifyOwnership(id: string, userId: string) {
@@ -139,9 +140,9 @@ export async function PUT(
       
       // Revert original transaction's effect on account balance
       let originalBalanceChange = 0;
-      if (originalTransaction.type === 'Income') {
+      if (originalTransaction.type === TransactionType.INCOME) {
         originalBalanceChange = -originalTransaction.amount;
-      } else if (originalTransaction.type === 'Expense') {
+      } else if (originalTransaction.type === TransactionType.EXPENSE) {
         originalBalanceChange = originalTransaction.amount;
       }
 
@@ -154,9 +155,9 @@ export async function PUT(
 
       // Apply new transaction's effect on account balance
       let newBalanceChange = 0;
-      if (body.type === 'Income') {
+      if (body.type === TransactionType.INCOME) {
         newBalanceChange = body.amount;
-      } else if (body.type === 'Expense') {
+      } else if (body.type === TransactionType.EXPENSE) {
         newBalanceChange = -body.amount;
       }
 
@@ -169,19 +170,21 @@ export async function PUT(
     }
 
     // Handle budget spent amount adjustments
-    if (originalTransaction.type === 'Expense' && originalTransaction.budgetId) {
+    if (originalTransaction.type === TransactionType.EXPENSE && originalTransaction.budgetId) {
       // Revert original transaction's effect on budget spent amount
+      console.log(`Reverting budget spent for transaction ${originalTransaction.id}: -${originalTransaction.amount}`);
       await Budget.findByIdAndUpdate(
         originalTransaction.budgetId,
-        { $inc: { spent: -originalTransaction.amount } }
+        { $inc: { spent: -Math.abs(originalTransaction.amount) } }
       );
     }
 
-    if (body.type === 'Expense' && body.budgetId) {
+    if (body.type === TransactionType.EXPENSE && body.budgetId) {
       // Apply new transaction's effect on budget spent amount
+      console.log(`Updating budget spent for transaction ${originalTransaction.id}: +${body.amount}`);
       await Budget.findByIdAndUpdate(
         body.budgetId,
-        { $inc: { spent: body.amount } }
+        { $inc: { spent: Math.abs(body.amount) } }
       );
     }
 
@@ -240,9 +243,9 @@ export async function DELETE(
 
     // Revert transaction's effect on account balance
     let balanceChange = 0;
-    if (transaction.type === 'income') {
+    if (transaction.type === TransactionType.INCOME) {
       balanceChange = -transaction.amount;
-    } else if (transaction.type === 'expense') {
+    } else if (transaction.type === TransactionType.EXPENSE) {
       balanceChange = transaction.amount;
     }
 
@@ -254,10 +257,11 @@ export async function DELETE(
     }
 
     // Revert transaction's effect on budget spent amount if applicable
-    if (transaction.type === 'expense' && transaction.budgetId) {
+    if (transaction.type === TransactionType.EXPENSE && transaction.budgetId) {
+      console.log(`Reverting budget spent for deleted transaction ${transaction.id}: -${transaction.amount}`);
       await Budget.findByIdAndUpdate(
         transaction.budgetId,
-        { $inc: { spent: -transaction.amount } }
+        { $inc: { spent: -Math.abs(transaction.amount) } }
       );
     }
 

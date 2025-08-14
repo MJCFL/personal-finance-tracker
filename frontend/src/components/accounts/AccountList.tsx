@@ -19,10 +19,25 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete })
       currency: 'USD',
     }).format(amount);
   };
+  
+  // Calculate annual interest for savings accounts
+  const calculateAnnualInterest = (balance: number, interestRate?: number) => {
+    if (!interestRate) return 0;
+    return balance * (interestRate / 100);
+  };
 
   // Get account type display name
   const getAccountTypeDisplay = (type: AccountType) => {
     return type.replace('_', ' ').replace(/\b\w/g, char => char.toUpperCase());
+  };
+
+  // Check if account is a liability account
+  const isLiabilityAccount = (type: AccountType) => {
+    return [
+      AccountType.CREDIT_CARD,
+      AccountType.LOAN,
+      AccountType.MORTGAGE
+    ].includes(type);
   };
 
   // Handle delete confirmation
@@ -94,17 +109,27 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete })
                 <div className="text-sm text-gray-900">{account.institution}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className={`text-sm font-medium ${account.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <div className={`text-sm font-medium ${isLiabilityAccount(account.type) ? 'text-red-600' : 'text-green-600'}`}>
                   {formatCurrency(account.balance)}
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                {(account.type === AccountType.CREDIT_CARD || account.type === AccountType.LOAN || account.type === AccountType.MORTGAGE) && (
+                {/* For liability accounts, show interest rate */}
+                {isLiabilityAccount(account.type) && (
                   <div className="text-sm text-gray-900">
                     {account.interestRate !== undefined ? `${account.interestRate.toFixed(2)}%` : 'N/A'}
                   </div>
                 )}
-                {!(account.type === AccountType.CREDIT_CARD || account.type === AccountType.LOAN || account.type === AccountType.MORTGAGE) && (
+                
+                {/* For savings accounts, show only interest rate */}
+                {account.type === AccountType.SAVINGS && (
+                  <div className="text-sm text-gray-900">
+                    {account.interestRate !== undefined ? `${account.interestRate.toFixed(2)}%` : 'N/A'}
+                  </div>
+                )}
+                
+                {/* For other account types, show dash */}
+                {!isLiabilityAccount(account.type) && account.type !== AccountType.SAVINGS && (
                   <div className="text-sm text-gray-400">—</div>
                 )}
               </td>

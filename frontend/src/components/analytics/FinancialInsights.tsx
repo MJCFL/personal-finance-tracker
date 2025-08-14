@@ -36,42 +36,54 @@ export default function FinancialInsights() {
     const fetchData = async () => {
       try {
         setLoading(true);
+        console.log('FinancialInsights: Starting data fetch...');
         
-        // Fetch assets and accounts in parallel
-        const [fetchedAssets, fetchedAccounts] = await Promise.all([
-          getAssets(),
-          getAccounts()
-        ]);
-        
+        // Fetch assets
+        const fetchedAssets = await getAssets();
+        console.log('FinancialInsights: Assets fetched:', fetchedAssets);
         setAssets(fetchedAssets);
-        setAccounts(fetchedAccounts);
         
-        // Generate insights based on assets
-        const generatedInsights = generateInsights(fetchedAssets);
+        try {
+          console.log('FinancialInsights: Fetching accounts...');
+          const fetchedAccounts = await getAccounts();
+          console.log('FinancialInsights: Accounts fetched:', fetchedAccounts);
+          setAccounts(fetchedAccounts);
+          
+          // Get recommendations from the insights service
+          const fetchedRecommendations = await getRecommendations();
+          setRecommendations(fetchedRecommendations);
+          
+          // Generate insights using both assets and accounts
+          const generatedInsights = generateInsights(fetchedAssets, fetchedAccounts);
+          
+          // Convert recommendations to insights format for savings goals
+          const savingsInsights = fetchedRecommendations
+            .filter(rec => rec.category.toLowerCase() === 'savings')
+            .map(rec => ({
+              title: rec.title,
+              description: rec.description,
+              type: rec.priority === 'high' ? 'warning' as const : 
+                    rec.priority === 'medium' ? 'info' as const : 'success' as const,
+              icon: rec.type === 'achievement' ? '🏆' : 
+                   rec.type === 'goal' ? '🎯' : 
+                   rec.type === 'warning' ? '⚠️' : '💡',
+              category: 'savings'
+            }));
+  
+          setInsights([...generatedInsights, ...savingsInsights]);
+        } catch (accountError) {
+          console.error('FinancialInsights: Error fetching accounts:', accountError);
+          setAccounts([]);
+          
+          // Still generate insights but with empty accounts array
+          const generatedInsights = generateInsights(fetchedAssets, []);
+          setInsights(generatedInsights);
+        }
         
-        // Get recommendations from the insights service
-        const fetchedRecommendations = await getRecommendations();
-        
-        // Convert recommendations to insights format for savings goals
-        const savingsInsights = fetchedRecommendations
-          .filter(rec => rec.category.toLowerCase() === 'savings')
-          .map(rec => ({
-            title: rec.title,
-            description: rec.description,
-            type: rec.priority === 'high' ? 'warning' as const : 
-                  rec.priority === 'medium' ? 'info' as const : 'success' as const,
-            icon: rec.type === 'achievement' ? '🏆' : 
-                 rec.type === 'goal' ? '🎯' : 
-                 rec.type === 'warning' ? '⚠️' : '💡',
-            category: 'savings'
-          }));
-        
-        // Combine asset insights with savings insights
-        setInsights([...generatedInsights, ...savingsInsights]);
-        setRecommendations(fetchedRecommendations);
-      } catch (err) {
-        console.error('Failed to fetch data for insights:', err);
-        setError('Failed to load financial insights');
+        setLoading(false);
+      } catch (err: any) {
+        console.error('Error fetching data:', err);
+        setError(err.message || 'Failed to load insights');
       } finally {
         setLoading(false);
       }
@@ -80,7 +92,8 @@ export default function FinancialInsights() {
     fetchData();
   }, []);
 
-  const generateInsights = (assets: Asset[]): Insight[] => {
+  // Function to generate insights based on assets and accounts
+  const generateInsights = (assets: Asset[], accountsData: any[]): Insight[] => {
     const insights: Insight[] = [];
     
     // Calculate total portfolio value
@@ -140,27 +153,8 @@ export default function FinancialInsights() {
       }
     }
     
-    // Insight 2: Cash Reserve
-    // Look for a 'cash' category, or default to 0 if not found
-    const cashCategory = ASSET_CATEGORIES.find(cat => cat.value === 'cash' as AssetCategory);
-    const cashPercentage = cashCategory ? (categoryPercentages[cashCategory.value] || 0) : 0;
-    
-    if (cashPercentage < 10 && totalValue > 1000) {
-      insights.push({
-        title: 'Low Cash Reserve',
-        description: `Only ${cashPercentage.toFixed(1)}% of your portfolio is in cash. Consider maintaining more in your savings and checking accounts.`,
-        type: 'warning',
-        icon: '💰',
-      });
-    } else if (cashPercentage > 30 && totalValue > 1000) {
-      insights.push({
-        title: 'High Cash Reserve',
-        description: `${cashPercentage.toFixed(1)}% of your portfolio is in cash. Consider investing some to potentially earn higher returns.`,
-        type: 'info',
-        icon: '💵',
-      });
-    }
-    
+    // Cash Reserve insight has been removed as requested
+    // We can add a different insight here in the future
     // Insight 3: Portfolio Growth
     const stockAssets = assets.filter(asset => asset.type === AssetType.CRYPTO || asset.category === 'Stocks' as AssetCategory);
     if (stockAssets.length > 0) {

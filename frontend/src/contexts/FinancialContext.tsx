@@ -52,12 +52,10 @@ const saveCachedFinancialSummary = (summary: FinancialSummary): void => {
   if (typeof window === 'undefined') return; // Server-side check
   
   try {
-    // Only cache if the summary has valid non-zero values
-    if (summary.netWorth !== 0 || summary.totalBalance !== 0 || 
-        summary.monthlyIncome !== 0 || summary.monthlyExpenses !== 0) {
-      localStorage.setItem(FINANCIAL_SUMMARY_CACHE_KEY, JSON.stringify(summary));
-      console.log('Saved financial summary to cache:', summary);
-    }
+    // Always save the latest data, even if it's all zeros
+    // This ensures that when accounts are deleted, the cache reflects that
+    localStorage.setItem(FINANCIAL_SUMMARY_CACHE_KEY, JSON.stringify(summary));
+    console.log('Saved financial summary to cache:', summary);
   } catch (error) {
     console.error('Error saving financial summary to cache:', error);
   }
@@ -90,20 +88,15 @@ export function FinancialProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const summary = await getFinancialSummary();
       
-      // Only update state if we got valid data (non-zero values)
-      if (summary && (summary.netWorth !== 0 || summary.totalBalance !== 0 || 
-          summary.monthlyIncome !== 0 || summary.monthlyExpenses !== 0)) {
-        setFinancialSummary(summary);
-        saveCachedFinancialSummary(summary);
-      } else {
-        console.warn('Received potentially invalid financial summary:', summary);
-        // Use cached data if available and current data seems invalid
-        const cachedData = loadCachedFinancialSummary();
-        if (cachedData) {
-          console.log('Using cached financial data instead of potentially invalid data');
-          setFinancialSummary(cachedData);
-        }
-      }
+      // Always update with the latest data from the server
+      // This ensures we show zero balances when accounts are deleted
+      setFinancialSummary(summary);
+      
+      // Update the cache with the latest data, even if it's zeros
+      // This ensures that when accounts are deleted, the cache reflects that
+      saveCachedFinancialSummary(summary);
+      
+      console.log('Updated financial summary:', summary);
     } catch (error) {
       console.error('Error fetching financial summary:', error);
       // Use cached data on error

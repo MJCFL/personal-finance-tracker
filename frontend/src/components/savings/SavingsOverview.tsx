@@ -26,6 +26,17 @@ export default function SavingsOverview({ accounts }: SavingsOverviewProps) {
   
   // Calculate total unallocated
   const totalUnallocated = totalSavings - totalAllocated;
+  
+  // Calculate annual interest for savings accounts
+  const calculateAnnualInterest = (balance: number, interestRate?: number) => {
+    if (!interestRate) return 0;
+    return balance * (interestRate / 100);
+  };
+  
+  // Calculate total expected annual interest
+  const totalAnnualInterest = accounts.reduce((sum, account) => {
+    return sum + calculateAnnualInterest(account.balance, account.interestRate);
+  }, 0);
 
   // Get the selected account
   const currentAccount = accounts.find(account => account.id === selectedAccount);
@@ -58,6 +69,13 @@ export default function SavingsOverview({ accounts }: SavingsOverviewProps) {
       bgClass: "bg-purple-50 dark:bg-purple-900/20",
       label: "Unallocated",
       value: totalUnallocated
+    },
+    {
+      id: "annual-interest",
+      bgClass: "bg-green-50 dark:bg-green-900/20",
+      label: "Annual Interest",
+      value: totalAnnualInterest,
+      isInterest: true
     }
   ];
 
@@ -97,11 +115,17 @@ export default function SavingsOverview({ accounts }: SavingsOverviewProps) {
       ) : (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {summaryCards.map((card) => (
               <div key={card.id} className={`${card.bgClass} p-4 rounded-lg`}>
                 <p className="text-sm text-gray-600 dark:text-gray-400">{card.label}</p>
-                <p className="text-2xl font-bold">${card.value.toFixed(2)}</p>
+                <p className="text-2xl font-bold">
+                  {card.isInterest ? (
+                    <span className="text-green-600">+${card.value.toFixed(2)}/year</span>
+                  ) : (
+                    `$${card.value.toFixed(2)}`
+                  )}
+                </p>
               </div>
             ))}
           </div>

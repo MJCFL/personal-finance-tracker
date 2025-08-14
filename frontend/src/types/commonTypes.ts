@@ -21,4 +21,17 @@ export enum TransactionType {
   INCOME = 'Income',
   EXPENSE = 'Expense',
   TRANSFER = 'Transfer',
+  PAYMENT = 'Payment',
+}
+
+// Client-side version of the AccountType enum from the Account model
+export enum AccountType {
+  CHECKING = 'checking',
+  SAVINGS = 'savings',
+  CREDIT_CARD = 'credit_card',
+  INVESTMENT = 'investment',
+  RETIREMENT = 'retirement',
+  LOAN = 'loan',
+  MORTGAGE = 'mortgage',
+  OTHER = 'other',
 }

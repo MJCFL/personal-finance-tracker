@@ -399,8 +399,8 @@ const AccountForm: React.FC<AccountFormProps> = ({ initialData, onSave, onCancel
         </label>
       </div>
       
-      {/* Interest Rate - Only for debt accounts */}
-      {(formData.type === AccountType.CREDIT_CARD || formData.type === AccountType.LOAN || formData.type === AccountType.MORTGAGE) && (
+      {/* Interest Rate - For debt accounts and savings accounts */}
+      {(formData.type === AccountType.CREDIT_CARD || formData.type === AccountType.LOAN || formData.type === AccountType.MORTGAGE || formData.type === AccountType.SAVINGS) && (
         <div>
           <label htmlFor="interestRate" className="block text-sm font-medium text-gray-700">
             Interest Rate (% APR)
@@ -445,7 +445,11 @@ const AccountForm: React.FC<AccountFormProps> = ({ initialData, onSave, onCancel
               <span className="text-gray-500 sm:text-sm">%</span>
             </div>
           </div>
-          <p className="mt-1 text-xs text-gray-500">Annual percentage rate for this debt (0% for promotional offers)</p>
+          <p className="mt-1 text-xs text-gray-500">
+            {formData.type === AccountType.SAVINGS 
+              ? 'Annual percentage yield (APY) for this savings account' 
+              : 'Annual percentage rate for this debt (0% for promotional offers)'}
+          </p>
         </div>
       )}
       

@@ -484,6 +484,15 @@ export async function updateCashBalance(
   newBalance: number
 ): Promise<InvestmentAccountData> {
   try {
+    // Validate input
+    if (typeof newBalance !== 'number' || isNaN(newBalance) || newBalance < 0) {
+      throw new Error('Cash amount must be a valid non-negative number');
+    }
+
+    if (!accountId) {
+      throw new Error('Account ID is required');
+    }
+
     const response = await fetch(`/api/investments/${accountId}/cash`, {
       method: 'PUT',
       headers: {
@@ -492,9 +501,15 @@ export async function updateCashBalance(
       body: JSON.stringify({ cash: newBalance }),
     });
 
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Server returned non-JSON response: ${await response.text()}`);
+    }
+
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to update cash balance');
+      throw new Error(error.error || `Failed to update cash balance: ${response.status} ${response.statusText}`);
     }
 
     const updatedAccount = await response.json();
