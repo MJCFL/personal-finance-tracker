@@ -178,16 +178,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Update account balance based on transaction type
+    // Update account balance based on transaction type and account type
     let balanceChange = 0;
-    console.log('Transaction type:', body.type, 'Amount:', body.amount);
+    console.log('Transaction type:', body.type, 'Amount:', body.amount, 'Account type:', account.type);
+    
+    // Check if this is a liability account (credit card, loan, mortgage)
+    const isLiabilityAccount = ['credit_card', 'loan', 'mortgage'].includes(account.type);
+    console.log('Is liability account:', isLiabilityAccount);
     
     // Handle transaction types
     if (body.type === TransactionType.INCOME) {
-      balanceChange = Math.abs(body.amount);
+      // Income always increases asset accounts and decreases liability accounts
+      balanceChange = isLiabilityAccount ? -Math.abs(body.amount) : Math.abs(body.amount);
     } else if (body.type === TransactionType.EXPENSE) {
-      // For expenses, we store positive amounts but decrease the balance
-      balanceChange = -Math.abs(body.amount);
+      // For expenses, we store positive amounts
+      // Expenses decrease asset accounts but increase liability accounts
+      balanceChange = isLiabilityAccount ? Math.abs(body.amount) : -Math.abs(body.amount);
     } else if (body.type === TransactionType.PAYMENT) {
       // For payments, decrease the source account balance
       balanceChange = -Math.abs(body.amount);

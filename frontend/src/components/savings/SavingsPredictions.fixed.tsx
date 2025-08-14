@@ -39,23 +39,13 @@ interface TotalSavingsPrediction {
 export default function SavingsPredictions({ accounts }: SavingsPredictionsProps) {
   const [selectedBucketId, setSelectedBucketId] = useState<string | null>(null);
   const [monthlyContribution, setMonthlyContribution] = useState<number>(100);
-  const [inputValue, setInputValue] = useState<string>('100');
   const [viewMode, setViewMode] = useState<'buckets' | 'total'>('buckets');
   // We'll use memoized values directly instead of state to prevent infinite loops
 
   // Handler for monthly contribution input changes
   const handleMonthlyContributionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Allow empty string in the input field
-    const newInputValue = e.target.value;
-    setInputValue(newInputValue);
-    
-    // Only convert to number when the field is not empty
-    if (newInputValue === '') {
-      // Use 0 for calculations when input is empty
-      setMonthlyContribution(0);
-    } else {
-      setMonthlyContribution(Number(newInputValue));
-    }
+    const value = e.target.value === '' ? 0 : Number(e.target.value);
+    setMonthlyContribution(value);
   };
 
   // Extract all buckets with goals from all accounts
@@ -221,7 +211,7 @@ export default function SavingsPredictions({ accounts }: SavingsPredictionsProps
                 </label>
                 <input
                   type="number"
-                  value={inputValue}
+                  value={monthlyContribution}
                   onChange={handleMonthlyContributionChange}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
                   min="0"
@@ -355,7 +345,7 @@ export default function SavingsPredictions({ accounts }: SavingsPredictionsProps
                 </label>
                 <input
                   type="number"
-                  value={inputValue}
+                  value={monthlyContribution}
                   onChange={handleMonthlyContributionChange}
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
                   min="0"

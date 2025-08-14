@@ -138,27 +138,61 @@ export async function PUT(
         body.type !== originalTransaction.type || 
         body.accountId !== originalTransaction.accountId.toString()) {
       
+      // Get the original account to check if it's a liability account
+      const originalAccount = await Account.findById(originalTransaction.accountId);
+      if (!originalAccount) {
+        return NextResponse.json(
+          { error: 'Original account not found' },
+          { status: 404 }
+        );
+      }
+      
+      // Check if original account is a liability account
+      const isOriginalLiabilityAccount = ['credit_card', 'loan', 'mortgage'].includes(originalAccount.type);
+      console.log('Original account type:', originalAccount.type, 'Is liability:', isOriginalLiabilityAccount);
+      
       // Revert original transaction's effect on account balance
       let originalBalanceChange = 0;
       if (originalTransaction.type === TransactionType.INCOME) {
-        originalBalanceChange = -originalTransaction.amount;
+        // For income: increase asset accounts, decrease liability accounts
+        originalBalanceChange = isOriginalLiabilityAccount ? originalTransaction.amount : -originalTransaction.amount;
       } else if (originalTransaction.type === TransactionType.EXPENSE) {
-        originalBalanceChange = originalTransaction.amount;
+        // For expense: decrease asset accounts, increase liability accounts
+        originalBalanceChange = isOriginalLiabilityAccount ? -originalTransaction.amount : originalTransaction.amount;
       }
 
       if (originalBalanceChange !== 0) {
+        console.log(`Reverting transaction effect on account ${originalTransaction.accountId}: ${originalBalanceChange}`);
         await Account.findByIdAndUpdate(
           originalTransaction.accountId,
           { $inc: { balance: originalBalanceChange } }
         );
       }
 
+      // Get the new account if it's different from the original
+      let newAccount = originalAccount;
+      if (body.accountId && body.accountId !== originalTransaction.accountId.toString()) {
+        newAccount = await Account.findById(body.accountId);
+        if (!newAccount) {
+          return NextResponse.json(
+            { error: 'New account not found' },
+            { status: 404 }
+          );
+        }
+      }
+      
+      // Check if new account is a liability account
+      const isNewLiabilityAccount = ['credit_card', 'loan', 'mortgage'].includes(newAccount.type);
+      console.log('New account type:', newAccount.type, 'Is liability:', isNewLiabilityAccount);
+      
       // Apply new transaction's effect on account balance
       let newBalanceChange = 0;
       if (body.type === TransactionType.INCOME) {
-        newBalanceChange = body.amount;
+        // For income: increase asset accounts, decrease liability accounts
+        newBalanceChange = isNewLiabilityAccount ? -Math.abs(body.amount) : Math.abs(body.amount);
       } else if (body.type === TransactionType.EXPENSE) {
-        newBalanceChange = -body.amount;
+        // For expense: decrease asset accounts, increase liability accounts
+        newBalanceChange = isNewLiabilityAccount ? Math.abs(body.amount) : -Math.abs(body.amount);
       }
 
       if (newBalanceChange !== 0) {
@@ -241,12 +275,29 @@ export async function DELETE(
     // Get transaction and verify ownership
     const transaction = await getTransactionAndVerifyOwnership(params.id, session.user.id);
 
+    // Get the account to check if it's a liability account
+    const account = await Account.findById(transaction.accountId);
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Account not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Check if account is a liability account
+    const isLiabilityAccount = ['credit_card', 'loan', 'mortgage'].includes(account.type);
+    console.log('Account type:', account.type, 'Is liability:', isLiabilityAccount);
+    
     // Revert transaction's effect on account balance
     let balanceChange = 0;
     if (transaction.type === TransactionType.INCOME) {
-      balanceChange = -transaction.amount;
+      // For income: increase asset accounts, decrease liability accounts
+      // When deleting, we need to reverse this effect
+      balanceChange = isLiabilityAccount ? transaction.amount : -transaction.amount;
     } else if (transaction.type === TransactionType.EXPENSE) {
-      balanceChange = transaction.amount;
+      // For expense: decrease asset accounts, increase liability accounts
+      // When deleting, we need to reverse this effect
+      balanceChange = isLiabilityAccount ? -transaction.amount : transaction.amount;
     }
 
     if (balanceChange !== 0) {

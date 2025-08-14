@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { TransactionData, deleteTransaction } from '@/services/transactionService';
+import { TransactionType } from '@/types/commonTypes';
 
 interface TransactionListProps {
   transactions: TransactionData[];
@@ -172,12 +173,39 @@ export default function TransactionList({
                   </div>
                   <div className="text-right shrink-0">
                     <p className={`text-sm font-medium ${
-                      transaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
+                      transaction.type === TransactionType.INCOME ? 'text-emerald-400' : 'text-rose-400'
                     }`}>
-                      {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
+                      {transaction.type === TransactionType.INCOME ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
                     </p>
                     <div className="text-sm text-gray-400">
-                      {accountMap[transaction.accountId] || 'Unknown Account'}
+                      {(() => {
+                        // Try direct lookup first
+                        if (transaction.accountId && accountMap[transaction.accountId]) {
+                          return accountMap[transaction.accountId];
+                        }
+                        
+                        // Try string conversion
+                        const accountIdStr = String(transaction.accountId);
+                        if (accountMap[accountIdStr]) {
+                          return accountMap[accountIdStr];
+                        }
+                        
+                        // If it's an object with _id property (MongoDB format)
+                        if (transaction.accountId && typeof transaction.accountId === 'object') {
+                          const accountObj = transaction.accountId as any;
+                          if (accountObj._id) {
+                            if (accountMap[accountObj._id]) {
+                              return accountMap[accountObj._id];
+                            }
+                            if (accountMap[String(accountObj._id)]) {
+                              return accountMap[String(accountObj._id)];
+                            }
+                          }
+                        }
+                        
+                        // Fallback
+                        return transaction.accountId ? 'Unknown Account' : 'No Account ID';
+                      })()} 
                     </div>
                   </div>
                 </div>

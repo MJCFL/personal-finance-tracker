@@ -10,6 +10,7 @@ import { getAccounts } from '@/services/accountService';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ErrorMessage from '@/components/ui/ErrorMessage';
 import AddTransactionModal from '@/components/transactions/AddTransactionModal';
+import { TransactionType } from '@/types/commonTypes';
 
 // Category and icon mappings for UI display
 const categoryColors = {
@@ -106,9 +107,17 @@ function TransactionsPageContent() {
   
   // Map account IDs to names for display
   const accountMap = accounts.reduce((map, account) => {
+    // Store the account name by both string ID and ObjectId string representation
     map[account.id] = account.name;
+    // Also store by the string version of the ID without quotes (in case MongoDB ObjectId is used)
+    if (account.id && account.id.toString) {
+      map[account.id.toString()] = account.name;
+    }
+    // Map account ID to name
     return map;
   }, {} as Record<string, string>);
+  
+  // Account mapping is now complete
 
   // Filter transactions based on search term
   const filteredTransactions = transactions.filter(transaction => {
@@ -118,16 +127,16 @@ function TransactionsPageContent() {
   // Calculate statistics
   const stats = {
     income: filteredTransactions
-      .filter(t => t.type === 'income')
+      .filter(t => t.type === TransactionType.INCOME)
       .reduce((sum, t) => sum + t.amount, 0),
     expenses: filteredTransactions
-      .filter(t => t.type === 'expense')
+      .filter(t => t.type === TransactionType.EXPENSE)
       .reduce((sum, t) => sum + t.amount, 0),
     netIncome: filteredTransactions
-      .filter(t => t.type === 'income')
+      .filter(t => t.type === TransactionType.INCOME)
       .reduce((sum, t) => sum + t.amount, 0) - 
       filteredTransactions
-      .filter(t => t.type === 'expense')
+      .filter(t => t.type === TransactionType.EXPENSE)
       .reduce((sum, t) => sum + t.amount, 0),
     monthlyChange: 0, // Will calculate if we have previous month data
   };
@@ -135,7 +144,7 @@ function TransactionsPageContent() {
   // Calculate category breakdown for expenses
   const categoryBreakdown = Object.entries(
     filteredTransactions
-      .filter(t => t.type === 'expense')
+      .filter(t => t.type === TransactionType.EXPENSE)
       .reduce((acc, t) => {
         acc[t.category] = (acc[t.category] || 0) + t.amount;
         return acc;
@@ -265,19 +274,19 @@ function TransactionsPageContent() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button 
-                    className={`px-3 py-1.5 ${transactions.filter(t => t.type === 'income').length > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-emerald-500/30 transition-colors`}
+                    className={`px-3 py-1.5 ${transactions.filter(t => t.type === TransactionType.INCOME).length > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-emerald-500/30 transition-colors`}
                     onClick={() => {
                       // Filter to show only income transactions
-                      setTransactions(prev => prev.filter(t => t.type === 'income'));
+                      setTransactions(prev => prev.filter(t => t.type === TransactionType.INCOME));
                     }}
                   >
                     Income
                   </button>
                   <button 
-                    className={`px-3 py-1.5 ${transactions.filter(t => t.type === 'expense').length > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-rose-500/30 transition-colors`}
+                    className={`px-3 py-1.5 ${transactions.filter(t => t.type === TransactionType.EXPENSE).length > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-gray-800 text-gray-400'} text-sm rounded-lg hover:bg-rose-500/30 transition-colors`}
                     onClick={() => {
                       // Filter to show only expense transactions
-                      setTransactions(prev => prev.filter(t => t.type === 'expense'));
+                      setTransactions(prev => prev.filter(t => t.type === TransactionType.EXPENSE));
                     }}
                   >
                     Expenses
