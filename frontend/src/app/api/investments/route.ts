@@ -19,10 +19,19 @@ export async function GET(req: NextRequest) {
     
     // Convert MongoDB documents to plain objects and map _id to id
     const plainAccounts = accounts.map(account => {
-      const plainAccount = account.toObject();
+      const plainAccount = account.toObject({ virtuals: true });
       plainAccount.id = plainAccount._id.toString();
       delete plainAccount._id;
       delete plainAccount.__v;
+      
+      // Calculate and set totalShares for each stock
+      if (plainAccount.stocks && plainAccount.stocks.length > 0) {
+        plainAccount.stocks = plainAccount.stocks.map((stock: any) => {
+          stock.totalShares = stock.lots.reduce((sum: number, lot: any) => sum + lot.shares, 0);
+          return stock;
+        });
+      }
+      
       return plainAccount;
     });
     
@@ -57,10 +66,18 @@ export async function POST(req: NextRequest) {
     await newAccount.save();
     
     // Convert to plain object and map _id to id
-    const plainAccount = newAccount.toObject();
+    const plainAccount = newAccount.toObject({ virtuals: true });
     plainAccount.id = plainAccount._id.toString();
     delete plainAccount._id;
     delete plainAccount.__v;
+    
+    // Calculate and set totalShares for each stock
+    if (plainAccount.stocks && plainAccount.stocks.length > 0) {
+      plainAccount.stocks = plainAccount.stocks.map((stock: any) => {
+        stock.totalShares = stock.lots.reduce((sum: number, lot: any) => sum + lot.shares, 0);
+        return stock;
+      });
+    }
     
     return NextResponse.json(plainAccount, { status: 201 });
   } catch (error: any) {

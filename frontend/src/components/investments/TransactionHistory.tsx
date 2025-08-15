@@ -1,14 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ITransaction, TransactionType } from '@/types/investment';
+import { deleteTransaction } from '@/services/investmentService';
+import { toast } from 'react-hot-toast';
 
 interface TransactionHistoryProps {
   transactions: ITransaction[];
   accountId: string;
 }
 
-const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions }) => {
+const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions, accountId }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   // Format date for display
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -99,6 +103,27 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
     return new Date(b.date).getTime() - new Date(a.date).getTime();
   });
 
+  // Handle transaction deletion
+  const handleDeleteTransaction = async (transactionId: string | undefined) => {
+    if (!transactionId || !accountId) return;
+    
+    try {
+      setIsDeleting(true);
+      setSelectedTransactionId(transactionId);
+      
+      await deleteTransaction(accountId, transactionId);
+      toast.success('Transaction deleted successfully');
+      
+      // The account data will be refreshed via the event emitter
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete transaction');
+      console.error('Error deleting transaction:', error);
+    } finally {
+      setIsDeleting(false);
+      setSelectedTransactionId(null);
+    }
+  };
+
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">Transaction History</h3>
@@ -117,6 +142,7 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
                 <th scope="col" className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Details</th>
                 <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Amount</th>
+                <th scope="col" className="px-3 py-3.5 text-right text-sm font-semibold text-gray-900">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
@@ -159,6 +185,16 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ transactions })
                       {transaction.type === TransactionType.BUY || transaction.type === TransactionType.WITHDRAWAL ? '-' : '+'}
                       ${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-4 text-sm text-right">
+                    <button
+                      onClick={() => handleDeleteTransaction(transaction.id)}
+                      disabled={isDeleting && selectedTransactionId === transaction.id}
+                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      title="Delete transaction without affecting balance"
+                    >
+                      {isDeleting && selectedTransactionId === transaction.id ? 'Deleting...' : '🗑️'}
+                    </button>
                   </td>
                 </tr>
               ))}

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getInvestmentAccounts, InvestmentAccountData } from '@/services/investmentService';
+import { getInvestmentAccounts, getInvestmentAccountById, InvestmentAccountData } from '@/services/investmentService';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
 import { InvestmentAccountType } from '@/types/investment';
 import InvestmentAccountList from './InvestmentAccountList';
 import InvestmentAccountDetails from './InvestmentAccountDetails';
@@ -23,13 +24,21 @@ const InvestmentPortfolio: React.FC = () => {
       const data = await getInvestmentAccounts();
       setAccounts(data);
       
-      // If there's a selected account, refresh its data
-      if (selectedAccount) {
-        const updatedAccount = data.find(acc => acc.id === selectedAccount.id);
-        if (updatedAccount) {
-          setSelectedAccount(updatedAccount);
-        } else {
-          setSelectedAccount(null);
+      // If there's a selected account, refresh its data with the latest version
+      if (selectedAccount && selectedAccount.id) {
+        // Get fresh data directly from the API to ensure we have the latest state
+        try {
+          const freshAccount = await getInvestmentAccountById(selectedAccount.id);
+          setSelectedAccount(freshAccount);
+        } catch (accountError) {
+          console.error('Error refreshing selected account:', accountError);
+          // Fall back to finding the account in the list
+          const updatedAccount = data.find(acc => acc.id === selectedAccount.id);
+          if (updatedAccount) {
+            setSelectedAccount(updatedAccount);
+          } else {
+            setSelectedAccount(null);
+          }
         }
       }
       
@@ -44,6 +53,20 @@ const InvestmentPortfolio: React.FC = () => {
 
   useEffect(() => {
     fetchAccounts();
+  }, []);
+  
+  // Listen for financial data changes
+  useEffect(() => {
+    // Subscribe to financial data change events
+    const unsubscribe = eventEmitter.on(FINANCIAL_DATA_CHANGED, () => {
+      console.log('Financial data changed event received, refreshing accounts');
+      fetchAccounts();
+    });
+    
+    // Cleanup subscription when component unmounts
+    return () => {
+      unsubscribe();
+    };
   }, []);
   
   // Set default active tab based on account type when account is selected

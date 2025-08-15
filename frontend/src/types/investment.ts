@@ -41,6 +41,7 @@ export interface IStock {
 }
 
 export interface ITransaction {
+  id?: string;
   type: TransactionType;
   ticker?: string;
   companyName?: string;

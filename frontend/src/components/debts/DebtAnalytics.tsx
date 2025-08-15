@@ -44,7 +44,8 @@ interface PayoffScenario {
 }
 
 const DebtAnalytics: React.FC<DebtAnalyticsProps> = ({ debt }) => {
-  const [monthlyPayment, setMonthlyPayment] = useState<number>(calculateDefaultPayment());
+  const [monthlyPayment, setMonthlyPayment] = useState<number | null>(calculateDefaultPayment());
+  const [inputValue, setInputValue] = useState<string>(calculateDefaultPayment().toString());
   const [payoffScenario, setPayoffScenario] = useState<PayoffScenario | null>(null);
   const [chartData, setChartData] = useState<ChartData<'line'> | null>(null);
 
@@ -69,8 +70,11 @@ const DebtAnalytics: React.FC<DebtAnalyticsProps> = ({ debt }) => {
 
   // Calculate payoff scenario when debt or payment changes
   useEffect(() => {
-    if (debt && monthlyPayment > 0) {
-      const scenario = calculatePayoffScenario(debt, monthlyPayment);
+    if (debt) {
+      // Use a minimum payment of 0.01 for calculations if payment is 0 or null
+      // This allows us to show the chart with essentially no payments
+      const effectivePayment = monthlyPayment && monthlyPayment > 0 ? monthlyPayment : 0.01;
+      const scenario = calculatePayoffScenario(debt, effectivePayment);
       setPayoffScenario(scenario);
       
       // Generate chart data
@@ -164,17 +168,36 @@ const DebtAnalytics: React.FC<DebtAnalyticsProps> = ({ debt }) => {
   const calculateAlternativeScenarios = () => {
     if (!payoffScenario) return null;
     
-    const basePayment = payoffScenario.monthlyPayment;
-    const scenarios = [
-      { label: '25% Less', payment: Math.round(basePayment * 0.75) },
-      { label: 'Current', payment: basePayment },
-      { label: '25% More', payment: Math.round(basePayment * 1.25) },
-      { label: '50% More', payment: Math.round(basePayment * 1.5) },
-      { label: 'Double', payment: basePayment * 2 },
-    ];
+    // If monthly payment is null or 0, use default payment scenarios
+    const basePayment = monthlyPayment && monthlyPayment > 0 ? monthlyPayment : calculateDefaultPayment();
+    
+    // Create scenarios based on the payment amount
+    const scenarios = [];
+    
+    // If payment is very small or 0, add some reasonable payment options
+    if (basePayment < 10) {
+      const minPayment = Math.max(Math.round(Math.abs(debt.balance) * 0.01), 25); // Minimum 1% of balance or $25
+      scenarios.push(
+        { label: 'Minimum', payment: minPayment },
+        { label: 'Recommended', payment: Math.round(minPayment * 2) },
+        { label: 'Aggressive', payment: Math.round(minPayment * 3) }
+      );
+    } else {
+      // Regular scenarios for normal payment amounts
+      scenarios.push(
+        { label: '25% Less', payment: Math.round(basePayment * 0.75) },
+        { label: 'Current', payment: basePayment },
+        { label: '25% More', payment: Math.round(basePayment * 1.25) },
+        { label: '50% More', payment: Math.round(basePayment * 1.5) },
+        { label: 'Double', payment: basePayment * 2 }
+      );
+    }
     
     return scenarios.map(scenario => {
-      if (scenario.payment === basePayment) {
+      // Check if this is the current payment scenario
+      const isCurrent = scenario.label === 'Current';
+      
+      if (isCurrent) {
         return { ...scenario, months: payoffScenario.totalMonths };
       }
       
@@ -203,17 +226,33 @@ const DebtAnalytics: React.FC<DebtAnalyticsProps> = ({ debt }) => {
           <div className="flex items-center">
             <span className="mr-2">$</span>
             <input
-              type="number"
+              type="text"
               id="monthlyPayment"
-              value={monthlyPayment}
-              onChange={(e) => setMonthlyPayment(Math.max(1, Number(e.target.value)))}
+              value={inputValue}
+              onChange={(e) => {
+                const value = e.target.value;
+                setInputValue(value);
+                
+                if (value === '') {
+                  // Allow empty input field
+                  setMonthlyPayment(null);
+                } else if (value === '0') {
+                  // Allow explicit zero
+                  setMonthlyPayment(0);
+                } else {
+                  const numValue = parseFloat(value);
+                  if (!isNaN(numValue)) {
+                    setMonthlyPayment(numValue);
+                  }
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              min="1"
             />
           </div>
         </div>
         
         {payoffScenario && (
+          // Always show the payoff scenario, even if payment is 0
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">

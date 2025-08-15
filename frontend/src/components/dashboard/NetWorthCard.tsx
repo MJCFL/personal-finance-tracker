@@ -25,54 +25,15 @@ export default function NetWorthCard() {
         // Use the net worth value that includes investments
         const totalNetWorth = financialSummary.netWorth;
         
-        // Create monthly net worth history using transaction data
-        // Group transactions by month
-        const monthlyData: Record<string, number> = {};
+        // Create net worth data for the current month only
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
-        // Initialize with current month's total
         const today = new Date();
         const currentMonth = months[today.getMonth()];
-        monthlyData[currentMonth] = totalNetWorth;
         
-        // Calculate previous months based on transactions
-        // This is a simplified calculation - in a real app, you would track net worth over time
-        let runningTotal = totalNetWorth;
-        
-        // Get last 5 months (or fewer if not enough data)
-        const historyMonths = [];
-        for (let i = 0; i < 5; i++) {
-          const monthIndex = (today.getMonth() - i + 12) % 12; // Handle wrapping around to previous year
-          historyMonths.unshift(months[monthIndex]);
-        }
-        
-        // Create net worth history
-        const netWorthData: NetWorthData[] = [];
-        
-        // Create history for any net worth (positive or negative)
-        if (totalNetWorth !== 0) {
-          // Start with a reasonable baseline for previous months if we don't have enough data
-          // This is just for demonstration - in a real app, you'd have historical snapshots
-          let previousMonthValue = totalNetWorth * 0.95; // 5% less than current as a starting point
-          
-          historyMonths.forEach((month, index) => {
-            if (index === historyMonths.length - 1) {
-              // Current month - use actual calculated value
-              netWorthData.push({ date: month, amount: totalNetWorth });
-            } else {
-              // For previous months, use our estimated value
-              netWorthData.push({ date: month, amount: previousMonthValue });
-              // Adjust for next month (random variation between -3% and +8% for demonstration)
-              const changePercent = Math.random() * 0.11 - 0.03;
-              previousMonthValue = previousMonthValue * (1 + changePercent);
-            }
-          });
-        } else {
-          // If no assets, just create empty data points for the months
-          historyMonths.forEach(month => {
-            netWorthData.push({ date: month, amount: 0 });
-          });
-        }
+        // Create net worth history with just the current month
+        const netWorthData: NetWorthData[] = [
+          { date: currentMonth, amount: totalNetWorth }
+        ];
         
         setNetWorthHistory(netWorthData);
         setError(null);
@@ -87,15 +48,12 @@ export default function NetWorthCard() {
     fetchNetWorthData();
   }, []);
   
-  // Calculate current and previous net worth for percentage change
+  // Calculate current net worth
   const currentNetWorth = netWorthHistory.length > 0 ? 
-    netWorthHistory[netWorthHistory.length - 1].amount : 0;
-  const previousNetWorth = netWorthHistory.length > 1 ? 
-    netWorthHistory[netWorthHistory.length - 2].amount : 0;
-  // Show percentage change if we have real data (positive or negative net worth)
-  const hasRealData = currentNetWorth !== 0 && previousNetWorth !== 0;
-  const percentageChange = hasRealData && previousNetWorth !== 0 ? 
-    ((currentNetWorth - previousNetWorth) / Math.abs(previousNetWorth)) * 100 : 0;
+    netWorthHistory[0].amount : 0;
+  // Since we're only showing current month, we don't have historical data for percentage change
+  const hasRealData = false;
+  const percentageChange = 0;
 
   return (
     <div className="p-4">

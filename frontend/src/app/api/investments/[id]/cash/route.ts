@@ -61,7 +61,7 @@ export async function PUT(
     }
     
     // Convert to plain object and map _id to id
-    const plainAccount = account.toObject();
+    const plainAccount = account.toObject({ virtuals: true });
     plainAccount.id = plainAccount._id.toString();
     delete plainAccount._id;
     delete plainAccount.__v;

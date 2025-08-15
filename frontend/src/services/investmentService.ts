@@ -268,6 +268,12 @@ export async function addTransaction(
       body: JSON.stringify(transactionData),
     });
 
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      throw new Error(`Server returned non-JSON response: ${await response.text()}`);
+    }
+
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to add transaction');
@@ -888,12 +894,40 @@ export async function searchCryptos(query: string): Promise<any[]> {
 
 
 
-// Sell crypto from investment account
+// Delete a transaction without affecting the balance
+export async function deleteTransaction(
+  accountId: string,
+  transactionId: string
+): Promise<InvestmentAccountData> {
+  try {
+    const response = await fetch(`/api/investments/${accountId}/transactions/${transactionId}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const error = await response.json();
+        throw new Error(error.error || `Failed to delete transaction: ${response.status} ${response.statusText}`);
+      } else {
+        throw new Error(`Failed to delete transaction: ${response.status} ${response.statusText}`);
+      }
+    }
+    
+    const result = await response.json();
+    eventEmitter.emit(FINANCIAL_DATA_CHANGED);
+    return result.account;
+  } catch (error: any) {
+    console.error('Error deleting transaction:', error);
+    throw error;
+  }
+}
+
 export async function sellCrypto(
   accountId: string,
   saleData: {
     symbol: string;
-    name: string;
     amount: number;
     price: number;
     date?: Date;

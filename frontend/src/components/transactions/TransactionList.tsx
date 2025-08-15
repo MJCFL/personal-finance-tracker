@@ -168,7 +168,13 @@ export default function TransactionList({
                       {transaction.description}
                     </h3>
                     <p className="text-xs text-gray-400">
-                      {new Date(transaction.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+                      {(() => {
+                        // Parse the date string and add a day to compensate for timezone issues
+                        const date = new Date(transaction.date);
+                        // Add one day to compensate for the timezone offset issue
+                        date.setDate(date.getDate() + 1);
+                        return date.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                      })()}
                     </p>
                   </div>
                   <div className="text-right shrink-0">

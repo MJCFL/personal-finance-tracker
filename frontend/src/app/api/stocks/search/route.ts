@@ -38,6 +38,11 @@ const fallbackStocks = [
   { ticker: 'QQQ', name: 'Invesco QQQ Trust', exchange: 'NASDAQ' },
   { ticker: 'SPY', name: 'SPDR S&P 500 ETF Trust', exchange: 'NYSE ARCA' },
   { ticker: 'VEA', name: 'Vanguard FTSE Developed Markets ETF', exchange: 'NYSE ARCA' },
+  
+  // Mutual Funds
+  { ticker: 'VIIIX', name: 'Fidelity Institutional 500 Index Fund', exchange: 'MUTF' },
+  { ticker: 'VFIAX', name: 'Vanguard 500 Index Fund Admiral Shares', exchange: 'MUTF' },
+  { ticker: 'FXAIX', name: 'Fidelity 500 Index Fund', exchange: 'MUTF' },
 ];
 
 // Function to search stocks using Yahoo Finance API
@@ -58,12 +63,14 @@ async function searchStocks(query: string): Promise<StockSearchResult[]> {
       // Map Yahoo Finance results to our format
       const results = searchResults.quotes
         .filter(quote => {
-          // Check if it's an equity/stock/ETF by examining available properties
+          // Check if it's an equity/stock/ETF/mutual fund by examining available properties
           const quoteObj = quote as any;
           return quoteObj.typeDisp === 'Equity' || 
                  quoteObj.quoteType === 'EQUITY' || 
                  quoteObj.typeDisp === 'ETF' || 
-                 quoteObj.quoteType === 'ETF';
+                 quoteObj.quoteType === 'ETF' ||
+                 quoteObj.typeDisp === 'Mutual Fund' ||
+                 quoteObj.quoteType === 'MUTUALFUND';
         })
         .map(quote => {
           const quoteObj = quote as any;

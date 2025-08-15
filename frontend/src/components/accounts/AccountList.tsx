@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AccountData, deleteAccount } from '@/services/accountService';
 import { AccountType } from '@/types/account';
+import ViewNotesModal from './ViewNotesModal';
 
 interface AccountListProps {
   accounts: AccountData[];
@@ -11,6 +12,7 @@ interface AccountListProps {
 const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
+  const [viewingNotes, setViewingNotes] = useState<AccountData | null>(null);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -148,6 +150,13 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete })
                   ✏️ Edit
                 </button>
                 <button
+                  onClick={() => setViewingNotes(account)}
+                  className="text-green-600 hover:text-green-900 mr-4"
+                  title="View account notes"
+                >
+                  📝 Notes
+                </button>
+                <button
                   onClick={() => handleDeleteClick(account.id!)}
                   className="text-red-600 hover:text-red-900"
                 >
@@ -186,6 +195,15 @@ const AccountList: React.FC<AccountListProps> = ({ accounts, onEdit, onDelete })
             </div>
           </div>
         </div>
+      )}
+      
+      {/* View Notes Modal */}
+      {viewingNotes && (
+        <ViewNotesModal
+          notes={viewingNotes.notes || ''}
+          accountName={viewingNotes.name}
+          onClose={() => setViewingNotes(null)}
+        />
       )}
     </div>
   );

@@ -2,8 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { getTransactions } from '@/services/transactionService';
+import { getBudgets } from '@/services/budgetService';
 import { TransactionType } from '@/types/commonTypes';
-import { BudgetCategory } from '@/types/budget';
+import { BudgetCategory, Budget } from '@/types/budget';
+import eventEmitter, { FINANCIAL_DATA_CHANGED } from '@/utils/eventEmitter';
+import { useRouter } from 'next/navigation';
 
 interface BudgetItem {
   category: string;
@@ -30,84 +33,95 @@ const categoryColors: Record<string, string> = {
 };
 
 export default function BudgetPreviewCard() {
+  const router = useRouter();
   const [budgetData, setBudgetData] = useState<BudgetItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchBudgetData() {
-      try {
-        setLoading(true);
-        
-        // Get transactions from the current month
-        const now = new Date();
-        const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
-        const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
-        
-        const response = await getTransactions({
-          startDate,
-          endDate,
-          type: TransactionType.EXPENSE
-        });
-        
-        // Define some default budgets (in a real app, these would come from a budget API)
-        const defaultBudgets: Record<string, number> = {
-          Housing: 2000,
-          Food: 800,
-          Transport: 400,
-          Shopping: 500,
-          Entertainment: 300,
-          Utilities: 350,
-          Healthcare: 200,
-          Education: 150,
-          Travel: 300,
-          Other: 200
-        };
-        
-        // Group transactions by category
-        const categorySpending: Record<string, number> = {};
-        
-        response.transactions.forEach(transaction => {
-          if (transaction.type === TransactionType.EXPENSE) {
-            const category = transaction.category || 'Other';
-            categorySpending[category] = (categorySpending[category] || 0) + transaction.amount;
-          }
-        });
-        
-        // Create budget items from spending data
-        const budgetItems: BudgetItem[] = [];
-        
-        // Add categories with spending
-        Object.entries(categorySpending).forEach(([category, spent]) => {
-          budgetItems.push({
-            category,
-            spent,
-            budget: defaultBudgets[category] || 500, // Use default budget or fallback to $500
-            color: categoryColors[category] || 'bg-slate-500'
-          });
-        });
-        
-        // Sort by percentage spent (highest first)
-        budgetItems.sort((a, b) => (b.spent / b.budget) - (a.spent / a.budget));
-        
-        // Take top 3 categories
-        setBudgetData(budgetItems.slice(0, 3));
+  // Function to fetch budget data
+  async function fetchBudgetData() {
+    try {
+      setLoading(true);
+      
+      // Get real budgets from the database
+      const userBudgets = await getBudgets();
+      
+      if (userBudgets.length === 0) {
+        // No budgets found
+        setBudgetData([]);
         setError(null);
-      } catch (err) {
-        console.error('Error fetching budget data:', err);
-        setError('Failed to load budget data');
-      } finally {
         setLoading(false);
+        return;
       }
+      
+      // Get transactions from the current month for spending calculation
+      const now = new Date();
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1); // First day of current month
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Last day of current month
+      
+      const response = await getTransactions({
+        startDate,
+        endDate,
+        type: TransactionType.EXPENSE
+      });
+      
+      // Convert budgets to budget items for display
+      const budgetItems: BudgetItem[] = userBudgets.map(budget => {
+        // Get the category color
+        const color = categoryColors[budget.category] || 'bg-slate-500';
+        
+        return {
+          category: budget.name,
+          spent: budget.spent,
+          budget: budget.amount,
+          color: color
+        };
+      });
+      
+      // Sort by percentage spent (highest first)
+      budgetItems.sort((a, b) => (b.spent / b.budget) - (a.spent / a.budget));
+      
+      // Take top 3 categories
+      setBudgetData(budgetItems.slice(0, 3));
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching budget data:', err);
+      setError('Failed to load budget data');
+    } finally {
+      setLoading(false);
     }
+  }
 
+  // Initial fetch
+  useEffect(() => {
     fetchBudgetData();
+  }, []);
+  
+  // Listen for financial data changes
+  useEffect(() => {
+    // Function to handle financial data changes
+    const handleFinancialDataChanged = () => {
+      fetchBudgetData();
+    };
+    
+    // Subscribe to financial data changes and get the unsubscribe function
+    const unsubscribe = eventEmitter.on(FINANCIAL_DATA_CHANGED, handleFinancialDataChanged);
+    
+    // Cleanup subscription
+    return () => {
+      unsubscribe();
+    };
   }, []);
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-base font-semibold text-gray-900">Budget Overview</h3>
-        <button className="text-xs text-blue-600 hover:text-blue-700">View All</button>
+        <button 
+          onClick={() => router.push('/budgets')} 
+          className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer"
+        >
+          View All
+        </button>
       </div>
 
       {loading ? (

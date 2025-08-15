@@ -124,7 +124,12 @@ export async function createTransaction(transactionData: TransactionData): Promi
       },
       body: JSON.stringify({
         ...transactionData,
-        date: transactionData.date.toISOString(),
+        // Preserve the date by setting the time to noon in local timezone
+        // This prevents timezone issues when converting between local and UTC
+        date: new Date(transactionData.date.getFullYear(), 
+                      transactionData.date.getMonth(), 
+                      transactionData.date.getDate(), 
+                      12, 0, 0).toISOString(),
         // Use the correct enum values for transaction type
         type: transactionData.type,
         // Ensure amount is a number
@@ -157,8 +162,14 @@ export async function updateTransaction(id: string, transactionData: Partial<Tra
     // Format date if it exists
     const formattedData = { ...transactionData };
     if (formattedData.date instanceof Date) {
-      // Use type assertion to handle date conversion
-      (formattedData as any).date = formattedData.date.toISOString();
+      // Preserve the date by setting the time to noon in local timezone
+      // This prevents timezone issues when converting between local and UTC
+      (formattedData as any).date = new Date(
+        formattedData.date.getFullYear(),
+        formattedData.date.getMonth(),
+        formattedData.date.getDate(),
+        12, 0, 0
+      ).toISOString();
     }
     
     // Make API request to update transaction
