@@ -309,11 +309,17 @@ export async function DELETE(
 
     // Revert transaction's effect on budget spent amount if applicable
     if (transaction.type === TransactionType.EXPENSE && transaction.budgetId) {
-      console.log(`Reverting budget spent for deleted transaction ${transaction.id}: -${transaction.amount}`);
-      await Budget.findByIdAndUpdate(
-        transaction.budgetId,
-        { $inc: { spent: -Math.abs(transaction.amount) } }
-      );
+      // Check if budget exists before updating
+      const budget = await Budget.findById(transaction.budgetId);
+      if (budget) {
+        console.log(`Reverting budget spent for deleted transaction ${transaction.id}: -${transaction.amount}`);
+        await Budget.findByIdAndUpdate(
+          transaction.budgetId,
+          { $inc: { spent: -Math.abs(transaction.amount) } }
+        );
+      } else {
+        console.log(`Budget ${transaction.budgetId} not found, skipping budget update`);
+      }
     }
 
     // Delete transaction
