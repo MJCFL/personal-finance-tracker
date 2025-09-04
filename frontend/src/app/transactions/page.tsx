@@ -67,8 +67,14 @@ function TransactionsPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBank, setSelectedBank] = useState('all');
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  
+  // Initialize date filters to current month by default
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
+  const [startDate, setStartDate] = useState<Date | null>(firstDayOfMonth);
+  const [endDate, setEndDate] = useState<Date | null>(lastDayOfMonth);
   
   // Fetch transactions and accounts data
   useEffect(() => {
@@ -124,26 +130,32 @@ function TransactionsPageContent() {
     return transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // Calculate statistics
+  // Filter transactions for the current month only for summary cards
+  const currentMonthTransactions = filteredTransactions.filter(transaction => {
+    const transactionDate = new Date(transaction.date);
+    return transactionDate >= firstDayOfMonth && transactionDate <= lastDayOfMonth;
+  });
+
+  // Calculate statistics using current month transactions only
   const stats = {
-    income: filteredTransactions
+    income: currentMonthTransactions
       .filter(t => t.type === TransactionType.INCOME)
       .reduce((sum, t) => sum + t.amount, 0),
-    expenses: filteredTransactions
+    expenses: currentMonthTransactions
       .filter(t => t.type === TransactionType.EXPENSE)
       .reduce((sum, t) => sum + t.amount, 0),
-    netIncome: filteredTransactions
+    netIncome: currentMonthTransactions
       .filter(t => t.type === TransactionType.INCOME)
       .reduce((sum, t) => sum + t.amount, 0) - 
-      filteredTransactions
+      currentMonthTransactions
       .filter(t => t.type === TransactionType.EXPENSE)
       .reduce((sum, t) => sum + t.amount, 0),
     monthlyChange: 0, // Will calculate if we have previous month data
   };
 
-  // Calculate category breakdown for expenses
+  // Calculate category breakdown for expenses (using current month only)
   const categoryBreakdown = Object.entries(
-    filteredTransactions
+    currentMonthTransactions
       .filter(t => t.type === TransactionType.EXPENSE)
       .reduce((acc, t) => {
         acc[t.category] = (acc[t.category] || 0) + t.amount;
